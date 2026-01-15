@@ -1,0 +1,12 @@
+fecha,producto,categoria,precio_unitario,cantidad,descuento
+2024-03-01,Tablet Samsung,Tablets,599.99,3,10.0
+2024-03-01,Cable Lightning,Accesorios,ERROR,5,0.0
+2024-03-02,Monitor ASUS,Monitores,349.99,,15.0
+2024-03-02,Mouse Inalámbrico,Accesorios,49.99,abc,5.0
+2024-03-03,Laptop MSI
+2024-03-03,Teclado RGB,Accesorios,-99.99,2,150.0
+2024-03-04,SSD 256GB,Almacenamiento,79.99,4,-10.0
+Esta línea no es válida y causará un error
+2024-03-05,Auriculares,Audio,129.99,2,20.0
+2024-03-05,,Categoría Vacía,99.99,1,0.0
+,Producto Sin Fecha,Electrónicos,199.99,1,10.0

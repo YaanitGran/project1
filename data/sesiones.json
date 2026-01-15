@@ -1,0 +1,147 @@
+{
+  "timestamp": "2024-02-29T12:00:00Z",
+  "usuarios": [
+    {
+      "id": 2001,
+      "nombre": "Patricia Mendoza",
+      "email": "patricia.mendoza@empresa.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-29T10:30:00Z"
+    },
+    {
+      "id": 2002,
+      "nombre": "Andrés Vargas",
+      "email": "andres.vargas@empresa.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-29T11:45:00Z"
+    },
+    {
+      "id": 2003,
+      "nombre": "Sofia Herrera",
+      "email": "sofia.herrera@empresa.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-29T08:20:00Z"
+    },
+    {
+      "id": 2004,
+      "nombre": "Diego Castro",
+      "email": "diego.castro@empresa.com",
+      "activo": false,
+      "ultimo_acceso": "2024-02-01T15:00:00Z"
+    },
+    {
+      "id": 2005,
+      "nombre": "Valentina Morales",
+      "email": "valentina.morales@empresa.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-28T22:15:00Z"
+    },
+    {
+      "id": 2006,
+      "nombre": "Fernando Jiménez",
+      "email": "fernando.jimenez@empresa.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-29T09:00:00Z"
+    },
+    {
+      "id": 2007,
+      "nombre": "Lucía Ortega",
+      "email": "lucia.ortega@empresa.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-29T11:30:00Z"
+    },
+    {
+      "id": 2008,
+      "nombre": "Alejandro Ramos",
+      "email": "alejandro.ramos@empresa.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-29T07:45:00Z"
+    }
+  ],
+  "sesiones": [
+    {
+      "usuario_id": 2001,
+      "inicio": "2024-02-29T10:00:00Z",
+      "duracion_segundos": 1800,
+      "paginas_visitadas": 25,
+      "acciones": ["login", "ver_dashboard", "analizar_ventas", "generar_reporte", "exportar_excel", "enviar_email", "logout"]
+    },
+    {
+      "usuario_id": 2002,
+      "inicio": "2024-02-29T11:30:00Z",
+      "duracion_segundos": 900,
+      "paginas_visitadas": 12,
+      "acciones": ["login", "ver_dashboard", "revisar_tareas", "actualizar_estado", "logout"]
+    },
+    {
+      "usuario_id": 2003,
+      "inicio": "2024-02-29T08:00:00Z",
+      "duracion_segundos": 1200,
+      "paginas_visitadas": 15,
+      "acciones": ["login", "buscar", "filtrar", "ver_clientes", "actualizar_datos", "guardar", "logout"]
+    },
+    {
+      "usuario_id": 2005,
+      "inicio": "2024-02-28T22:00:00Z",
+      "duracion_segundos": 900,
+      "paginas_visitadas": 8,
+      "acciones": ["login", "ver_dashboard", "revisar_alertas", "responder_mensaje", "logout"]
+    },
+    {
+      "usuario_id": 2006,
+      "inicio": "2024-02-29T08:45:00Z",
+      "duracion_segundos": 900,
+      "paginas_visitadas": 10,
+      "acciones": ["login", "ver_inventario", "actualizar_stock", "generar_pedido", "logout"]
+    },
+    {
+      "usuario_id": 2007,
+      "inicio": "2024-02-29T11:00:00Z",
+      "duracion_segundos": 1800,
+      "paginas_visitadas": 28,
+      "acciones": ["login", "ver_dashboard", "crear_campaña", "configurar_parametros", "programar_envio", "guardar", "logout"]
+    },
+    {
+      "usuario_id": 2008,
+      "inicio": "2024-02-29T07:30:00Z",
+      "duracion_segundos": 900,
+      "paginas_visitadas": 9,
+      "acciones": ["login", "ver_dashboard", "revisar_metricas", "descargar_pdf", "logout"]
+    },
+    {
+      "usuario_id": 2001,
+      "inicio": "2024-02-28T14:00:00Z",
+      "duracion_segundos": 2700,
+      "paginas_visitadas": 42,
+      "acciones": ["login", "analizar_ventas", "comparar_periodos", "crear_grafico", "exportar_excel", "presentar", "guardar", "logout"]
+    },
+    {
+      "usuario_id": 2002,
+      "inicio": "2024-02-28T09:30:00Z",
+      "duracion_segundos": 3600,
+      "paginas_visitadas": 50,
+      "acciones": ["login", "gestionar_proyectos", "asignar_tareas", "revisar_avances", "aprobar_cambios", "actualizar_timeline", "notificar_equipo", "logout"]
+    },
+    {
+      "usuario_id": 2003,
+      "inicio": "2024-02-27T16:00:00Z",
+      "duracion_segundos": 2400,
+      "paginas_visitadas": 30,
+      "acciones": ["login", "ver_clientes", "segmentar", "crear_lista", "configurar_campaña", "programar", "logout"]
+    },
+    {
+      "usuario_id": 2006,
+      "inicio": "2024-02-27T10:15:00Z",
+      "duracion_segundos": 1500,
+      "paginas_visitadas": 18,
+      "acciones": ["login", "revisar_pedidos", "aprobar_compras", "actualizar_proveedores", "generar_reporte", "logout"]
+    },
+    {
+      "usuario_id": 2007,
+      "inicio": "2024-02-27T14:30:00Z",
+      "duracion_segundos": 3000,
+      "paginas_visitadas": 38,
+      "acciones": ["login", "diseñar_email", "personalizar_contenido", "configurar_AB_test", "revisar", "aprobar", "programar_envio", "logout"]
+    }
+  ]
+}

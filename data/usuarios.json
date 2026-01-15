@@ -1,0 +1,147 @@
+{
+  "timestamp": "2024-02-28T23:59:59Z",
+  "usuarios": [
+    {
+      "id": 1001,
+      "nombre": "Ana García",
+      "email": "ana.garcia@email.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-28T15:30:00Z"
+    },
+    {
+      "id": 1002,
+      "nombre": "Carlos López",
+      "email": "carlos.lopez@email.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-28T09:15:00Z"
+    },
+    {
+      "id": 1003,
+      "nombre": "María Rodríguez",
+      "email": "maria.rodriguez@email.com",
+      "activo": false,
+      "ultimo_acceso": "2024-01-15T12:00:00Z"
+    },
+    {
+      "id": 1004,
+      "nombre": "Juan Martínez",
+      "email": "juan.martinez@email.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-27T18:45:00Z"
+    },
+    {
+      "id": 1005,
+      "nombre": "Laura Sánchez",
+      "email": "laura.sanchez@email.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-28T20:10:00Z"
+    },
+    {
+      "id": 1006,
+      "nombre": "Pedro Gómez",
+      "email": "pedro.gomez@email.com",
+      "activo": false,
+      "ultimo_acceso": "2023-12-20T10:30:00Z"
+    },
+    {
+      "id": 1007,
+      "nombre": "Isabel Fernández",
+      "email": "isabel.fernandez@email.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-28T14:22:00Z"
+    },
+    {
+      "id": 1008,
+      "nombre": "Roberto Díaz",
+      "email": "roberto.diaz@email.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-26T11:30:00Z"
+    },
+    {
+      "id": 1009,
+      "nombre": "Carmen Ruiz",
+      "email": "carmen.ruiz@email.com",
+      "activo": true,
+      "ultimo_acceso": "2024-02-28T16:45:00Z"
+    },
+    {
+      "id": 1010,
+      "nombre": "Miguel Torres",
+      "email": "miguel.torres@email.com",
+      "activo": false,
+      "ultimo_acceso": "2024-01-30T09:00:00Z"
+    }
+  ],
+  "sesiones": [
+    {
+      "usuario_id": 1001,
+      "inicio": "2024-02-28T15:00:00Z",
+      "duracion_segundos": 1800,
+      "paginas_visitadas": 15,
+      "acciones": ["login", "ver_dashboard", "actualizar_perfil", "ver_reportes", "descargar_pdf", "logout"]
+    },
+    {
+      "usuario_id": 1002,
+      "inicio": "2024-02-28T09:00:00Z",
+      "duracion_segundos": 900,
+      "paginas_visitadas": 8,
+      "acciones": ["login", "ver_dashboard", "buscar", "ver_reportes", "logout"]
+    },
+    {
+      "usuario_id": 1004,
+      "inicio": "2024-02-27T18:30:00Z",
+      "duracion_segundos": 900,
+      "paginas_visitadas": 10,
+      "acciones": ["login", "ver_dashboard", "crear_proyecto", "guardar", "logout"]
+    },
+    {
+      "usuario_id": 1005,
+      "inicio": "2024-02-28T19:45:00Z",
+      "duracion_segundos": 1500,
+      "paginas_visitadas": 20,
+      "acciones": ["login", "buscar", "filtrar", "exportar_excel", "ver_graficos", "compartir", "logout"]
+    },
+    {
+      "usuario_id": 1007,
+      "inicio": "2024-02-28T14:00:00Z",
+      "duracion_segundos": 1320,
+      "paginas_visitadas": 12,
+      "acciones": ["login", "ver_dashboard", "editar_configuracion", "guardar", "ver_ayuda", "logout"]
+    },
+    {
+      "usuario_id": 1008,
+      "inicio": "2024-02-26T11:00:00Z",
+      "duracion_segundos": 1800,
+      "paginas_visitadas": 18,
+      "acciones": ["login", "buscar", "ver_reportes", "descargar_pdf", "imprimir", "logout"]
+    },
+    {
+      "usuario_id": 1009,
+      "inicio": "2024-02-28T16:30:00Z",
+      "duracion_segundos": 900,
+      "paginas_visitadas": 7,
+      "acciones": ["login", "ver_dashboard", "ver_notificaciones", "responder_mensaje", "logout"]
+    },
+    {
+      "usuario_id": 1001,
+      "inicio": "2024-02-27T10:00:00Z",
+      "duracion_segundos": 3600,
+      "paginas_visitadas": 35,
+      "acciones": ["login", "crear_proyecto", "subir_archivo", "colaborar", "ver_reportes", "exportar_excel", "logout"]
+    },
+    {
+      "usuario_id": 1004,
+      "inicio": "2024-02-26T14:15:00Z",
+      "duracion_segundos": 2100,
+      "paginas_visitadas": 22,
+      "acciones": ["login", "ver_dashboard", "analizar_datos", "crear_grafico", "guardar", "compartir", "logout"]
+    },
+    {
+      "usuario_id": 1005,
+      "inicio": "2024-02-25T09:30:00Z",
+      "duracion_segundos": 1200,
+      "paginas_visitadas": 14,
+      "acciones": ["login", "buscar", "filtrar", "ver_detalles", "descargar_pdf", "logout"]
+    }
+  ]
+}

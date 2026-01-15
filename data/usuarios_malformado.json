@@ -1,0 +1,36 @@
+{
+  "timestamp": "2024-03-01T10:00:00Z",
+  "usuarios": [
+    {
+      "id": 3001,
+      "nombre": "Usuario Prueba",
+      "email": "test@test.com,
+      "activo": true,
+      "ultimo_acceso": "2024-03-01T09:00:00Z"
+    },
+    {
+      "id": 3002
+      "nombre": "Usuario Incompleto",
+      "email": "incompleto@test.com",
+      "activo": "si",
+      "ultimo_acceso": "fecha_invalida"
+    }
+  ],
+  "sesiones": [
+    {
+      "usuario_id": 3001,
+      "inicio": "2024-03-01T08:00:00Z",
+      "duracion_segundos": "mil",
+      "paginas_visitadas": 10
+      "acciones": ["login", "logout"
+    },
+    {
+      usuario_id: 3002,
+      "inicio": "2024-03-01T09:00:00Z",
+      "duracion_segundos": -500,
+      "paginas_visitadas": null,
+      "acciones": ["login", "error", "logout"]
+    }
+  ]
+  // Este comentario no es válido en JSON
+}

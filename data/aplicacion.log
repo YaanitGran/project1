@@ -1,0 +1,71 @@
+2024-02-28 08:00:15 [INFO] [Auth] Usuario ana.garcia@email.com inició sesión exitosamente
+2024-02-28 08:00:16 [DEBUG] [Auth] Token de sesión generado: expires_in=3600
+2024-02-28 08:01:30 [INFO] [Dashboard] Usuario 1001 accedió al dashboard principal
+2024-02-28 08:01:31 [DEBUG] [Dashboard] Cargando widgets: ventas, inventario, clientes
+2024-02-28 08:02:15 [INFO] [Reportes] Usuario 1001 solicitó reporte de ventas mensual
+2024-02-28 08:02:20 [INFO] [Reportes] Reporte generado exitosamente en 5 segundos
+2024-02-28 08:15:00 [WARN] [API] Rate limit alcanzado para usuario 1002
+2024-02-28 08:15:01 [INFO] [API] Aplicando throttling: 30 segundos de espera
+2024-02-28 08:30:45 [ERROR] [Inventario] Error al actualizar stock del producto ID:4532
+2024-02-28 08:30:46 [ERROR] [Inventario] Constraint violation: stock no puede ser negativo
+2024-02-28 08:30:47 [INFO] [Inventario] Transacción revertida exitosamente
+2024-02-28 09:00:00 [INFO] [Notificaciones] Enviando notificaciones programadas
+2024-02-28 09:00:15 [INFO] [Notificaciones] 127 notificaciones push enviadas
+2024-02-28 09:00:16 [WARN] [Notificaciones] 3 dispositivos no alcanzables
+2024-02-28 09:15:30 [INFO] [Auth] Usuario carlos.lopez@email.com inició sesión exitosamente
+2024-02-28 09:15:31 [INFO] [Auth] Sesión desde nuevo dispositivo detectada
+2024-02-28 09:15:32 [INFO] [Email] Enviando notificación de nuevo dispositivo
+2024-02-28 09:30:00 [DEBUG] [Cache] Precalentando cache de productos más vendidos
+2024-02-28 09:30:05 [DEBUG] [Cache] Cache actualizado: 500 productos indexados
+2024-02-28 10:00:00 [INFO] [Ventas] Nueva venta procesada: Order #98234
+2024-02-28 10:00:01 [INFO] [Ventas] Total: $1,299.99, Cliente: 4521
+2024-02-28 10:00:02 [INFO] [Inventario] Stock actualizado para 1 productos
+2024-02-28 10:00:03 [INFO] [Email] Confirmación de pedido enviada al cliente
+2024-02-28 10:15:45 [ERROR] [Pago] Error al procesar pago con tarjeta
+2024-02-28 10:15:46 [ERROR] [Pago] Gateway response: Fondos insuficientes
+2024-02-28 10:15:47 [INFO] [Pago] Notificando al cliente sobre el fallo de pago
+2024-02-28 10:30:00 [INFO] [Analytics] Compilando métricas de la última hora
+2024-02-28 10:30:10 [INFO] [Analytics] Métricas: 342 usuarios activos, 89 transacciones
+2024-02-28 11:00:00 [WARN] [Sesion] Sesión expirada para usuario 1003
+2024-02-28 11:00:01 [INFO] [Sesion] Limpiando datos de sesión temporal
+2024-02-28 11:15:30 [INFO] [Export] Usuario 1001 exportó datos a Excel
+2024-02-28 11:15:35 [INFO] [Export] Archivo generado: report_28022024_111535.xlsx
+2024-02-28 11:30:00 [DEBUG] [Performance] Tiempo de respuesta promedio: 234ms
+2024-02-28 11:30:01 [INFO] [Performance] Rendimiento dentro de SLA establecido
+2024-02-28 12:00:00 [INFO] [Tareas] Ejecutando tareas automáticas del mediodía
+2024-02-28 12:00:15 [INFO] [Tareas] Sincronización con ERP completada
+2024-02-28 12:00:30 [INFO] [Tareas] Actualización de tipos de cambio exitosa
+2024-02-28 12:15:45 [ERROR] [UI] Error de JavaScript en módulo de gráficos
+2024-02-28 12:15:46 [ERROR] [UI] TypeError: Cannot read property 'data' of undefined
+2024-02-28 12:15:47 [WARN] [UI] Fallback a versión simplificada de gráficos
+2024-02-28 13:00:00 [INFO] [Colaboracion] Usuario 1004 compartió documento con 3 usuarios
+2024-02-28 13:00:01 [INFO] [Colaboracion] Permisos asignados: lectura=2, escritura=1
+2024-02-28 13:30:00 [INFO] [Busqueda] Búsqueda ejecutada: "laptops dell"
+2024-02-28 13:30:02 [INFO] [Busqueda] 15 resultados encontrados en 2ms
+2024-02-28 14:00:00 [DEBUG] [WebSocket] 47 conexiones WebSocket activas
+2024-02-28 14:00:01 [DEBUG] [WebSocket] Latencia promedio: 15ms
+2024-02-28 14:15:30 [WARN] [Storage] Cuota de almacenamiento al 85% para usuario 1005
+2024-02-28 14:15:31 [INFO] [Email] Notificación de cuota enviada al usuario
+2024-02-28 14:30:00 [INFO] [Workflow] Flujo de aprobación iniciado: ID #7823
+2024-02-28 14:30:15 [INFO] [Workflow] Notificaciones enviadas a 3 aprobadores
+2024-02-28 15:00:00 [INFO] [IA] Análisis predictivo de ventas completado
+2024-02-28 15:00:25 [INFO] [IA] Precisión del modelo: 87.3%
+2024-02-28 15:15:00 [ERROR] [Integration] Fallo al sincronizar con servicio externo
+2024-02-28 15:15:01 [ERROR] [Integration] API externa retornó código 503
+2024-02-28 15:15:02 [INFO] [Integration] Programando reintento en 10 minutos
+2024-02-28 15:30:00 [INFO] [Audit] Generando log de auditoría diario
+2024-02-28 15:30:30 [INFO] [Audit] 1,247 eventos registrados
+2024-02-28 16:00:00 [INFO] [Dashboard] Actualizando métricas en tiempo real
+2024-02-28 16:00:05 [INFO] [Dashboard] WebSocket broadcast a 89 clientes
+2024-02-28 16:15:30 [WARN] [Validacion] Datos inconsistentes detectados en formulario
+2024-02-28 16:15:31 [INFO] [Validacion] Validación del lado servidor aplicada
+2024-02-28 16:30:00 [INFO] [Personalizacion] Cargando preferencias de usuario 1007
+2024-02-28 16:30:01 [DEBUG] [Personalizacion] Tema: oscuro, idioma: es-MX
+2024-02-28 17:00:00 [INFO] [Cierre] Iniciando proceso de cierre diario
+2024-02-28 17:00:45 [INFO] [Cierre] Conciliación completada: 0 discrepancias
+2024-02-28 17:15:00 [INFO] [Respaldo] Creando snapshot de base de datos
+2024-02-28 17:15:30 [INFO] [Respaldo] Snapshot creado exitosamente: snap_28022024
+2024-02-28 17:30:00 [DEBUG] [Memoria] Garbage collection ejecutado
+2024-02-28 17:30:01 [DEBUG] [Memoria] 523MB liberados
+2024-02-28 18:00:00 [INFO] [Sistema] Transición a modo nocturno
+2024-02-28 18:00:01 [INFO] [Sistema] Servicios no críticos pausados

@@ -1,0 +1,120 @@
+================================================================================
+                    REPORTE DE PROCESAMIENTO DE ARCHIVOS
+================================================================================
+
+Fecha de generación: 2026-01-09 00:47:28
+Directorio procesado: d:/WorkSpace/Proyectos/procesador_archivos/data
+Modo de procesamiento: Paralelo
+
+--------------------------------------------------------------------------------
+RESUMEN EJECUTIVO
+--------------------------------------------------------------------------------
+Total de archivos procesados: 8
+  - Archivos CSV: 3
+  - Archivos JSON: 2
+  - Archivos LOG: 2
+
+Tiempo total de procesamiento: 0.08 segundos
+Archivos con errores: 1
+Tasa de éxito: 87.50%
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE ARCHIVOS CSV
+--------------------------------------------------------------------------------
+[Archivo: ventas_corrupto.csv]
+  * Total de ventas: $1927.95
+  * Productos únicos: 3
+  * Producto más vendido: Tablet Samsung (3 unidades)
+  * Categoría top: Tablets ($1619.97)
+  * Descuento promedio: 10.00%
+  * Período: 2024-03-01 a 2024-03-05
+
+[Archivo: ventas_febrero.csv]
+  * Total de ventas: $26721.37
+  * Productos únicos: 16
+  * Producto más vendido: Cable Ethernet Cat6 (30 unidades)
+  * Categoría top: Computadoras ($13049.89)
+  * Descuento promedio: 13.50%
+  * Período: 2024-02-01 a 2024-02-28
+
+[Archivo: ventas_enero.csv]
+  * Total de ventas: $24399.93
+  * Productos únicos: 15
+  * Producto más vendido: Cable HDMI (40 unidades)
+  * Categoría top: Computadoras ($10289.91)
+  * Descuento promedio: 12.00%
+  * Período: 2024-01-02 a 2024-01-30
+
+Totales Consolidados CSV:
+  - Ventas totales: $53049.25
+  - Productos únicos totales: 34
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE ARCHIVOS JSON
+--------------------------------------------------------------------------------
+[Archivo: sesiones.json]
+  * Usuarios registrados: 8
+  * Usuarios activos: 7 (87.50%)
+  * Duración promedio de sesión: 30.00 minutos
+  * Páginas visitadas totales: 285
+  * Top acciones:
+    1. login (12 veces)
+    2. logout (12 veces)
+    3. ver_dashboard (5 veces)
+
+[Archivo: usuarios.json]
+  * Usuarios registrados: 10
+  * Usuarios activos: 7 (70.00%)
+  * Duración promedio de sesión: 26.70 minutos
+  * Páginas visitadas totales: 161
+  * Top acciones:
+    1. login (10 veces)
+    2. logout (10 veces)
+    3. ver_dashboard (6 veces)
+
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE ARCHIVOS LOG
+--------------------------------------------------------------------------------
+[Archivo: sistema.log]
+  * Total de entradas: 72
+  * Distribución por nivel:
+    - DEBUG: 6 (8.33%)
+    - INFO:  49 (68.06%)
+    - WARN:  7 (9.72%)
+    - ERROR: 9 (12.50%)
+    - FATAL: 1 (1.39%)
+  * Componente más problemático: API (3 errores)
+  * Patrón de error frecuente: "Deadlock detectado en transacción" (1 ocurrencias)
+
+[Archivo: aplicacion.log]
+  * Total de entradas: 71
+  * Distribución por nivel:
+    - DEBUG: 10 (14.08%)
+    - INFO:  47 (66.20%)
+    - WARN:  6 (8.45%)
+    - ERROR: 8 (11.27%)
+    - FATAL: 0 (0.00%)
+  * Componente más problemático: Integration (2 errores)
+  * Patrón de error frecuente: "API externa retornó código 503" (1 ocurrencias)
+
+
+--------------------------------------------------------------------------------
+ANÁLISIS DE RENDIMIENTO
+--------------------------------------------------------------------------------
+Comparación Secuencial vs Paralelo:
+  * Tiempo secuencial: N/A segundos
+  * Tiempo paralelo: 0.08 segundos
+  * Factor de mejora: N/A veces más rápido
+  * Procesos utilizados: 16
+  * Memoria máxima: N/A MB
+
+
+--------------------------------------------------------------------------------
+ERRORES Y ADVERTENCIAS
+--------------------------------------------------------------------------------
+✗ usuarios_malformado.json: JSON read error: JSON inválido o no legible: .\data/usuarios_malformado.json
+
+================================================================================
+                         FIN DEL REPORTE
+================================================================================

@@ -1,0 +1,64 @@
+================================================================================
+                    REPORTE DE PROCESAMIENTO DE ARCHIVOS
+================================================================================
+
+Fecha de generación: 2026-01-09 00:26:56
+Directorio procesado: d:/WorkSpace/Proyectos/procesador_archivos/test_temp_data
+Modo de procesamiento: Secuencial
+
+--------------------------------------------------------------------------------
+RESUMEN EJECUTIVO
+--------------------------------------------------------------------------------
+Total de archivos procesados: 1
+  - Archivos CSV: 1
+  - Archivos JSON: 0
+  - Archivos LOG: 0
+
+Tiempo total de procesamiento: 0.03 segundos
+Archivos con errores: 0
+Tasa de éxito: 100.00%
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE ARCHIVOS CSV
+--------------------------------------------------------------------------------
+[Archivo: test.csv]
+  * Total de ventas: $0
+  * Productos únicos: 0
+  * Producto más vendido: N/A (0 unidades)
+  * Categoría top: N/A ($0.00)
+  * Descuento promedio: 0.00%
+  * Período: 1970-01-01 a 1970-01-01
+
+Totales Consolidados CSV:
+  - Ventas totales: $0
+  - Productos únicos totales: 0
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE ARCHIVOS JSON
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE ARCHIVOS LOG
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+ANÁLISIS DE RENDIMIENTO
+--------------------------------------------------------------------------------
+Comparación Secuencial vs Paralelo:
+  * Tiempo secuencial:
+  * Tiempo paralelo:
+  * Factor de mejora:
+  * Procesos utilizados:
+  * Memoria máxima:
+
+
+--------------------------------------------------------------------------------
+ERRORES Y ADVERTENCIAS
+--------------------------------------------------------------------------------
+  No errors found
+
+================================================================================
+                         FIN DEL REPORTE
+================================================================================

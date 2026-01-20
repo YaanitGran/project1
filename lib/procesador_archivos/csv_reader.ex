@@ -113,8 +113,6 @@ defmodule ProcesadorArchivos.CSVReader do
     end
   end
 
-  defp not_empty(_s, line, field), do: {:error, error_msg(line, "#{field} no puede estar vacío")}
-
   defp not_empty(s, line, field) do
     if is_binary(s) and String.trim(s) != "" do
       :ok

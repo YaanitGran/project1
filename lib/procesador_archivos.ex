@@ -8,7 +8,7 @@ defmodule ProcesadorArchivos do
   messages appear in Spanish.
   """
 
-  alias ProcesadorArchivos.{Discovery, Pipeline, Reporter}
+  alias ProcesadorArchivos.{Classifier, Pipeline, Reporter}
 
   @type mode :: :sequential | :parallel
 
@@ -29,7 +29,7 @@ defmodule ProcesadorArchivos do
   Returns {:ok, consolidated_metrics_map}
   """
   def process_directory(dir, opts \\ %{}) when is_binary(dir) do
-    files = Discovery.discover(dir)
+    files = Classifier.discover(dir)
     process_files(files, Map.put(opts, :input_root, dir))
   end
 
@@ -76,7 +76,7 @@ defmodule ProcesadorArchivos do
   def benchmark(dir, opts \\ %{}) when is_binary(dir) do
     opts = merge_defaults(opts)
 
-    files = Discovery.discover(dir)
+    files = Classifier.discover(dir)
 
     # Sequential run
     t0 = System.monotonic_time()

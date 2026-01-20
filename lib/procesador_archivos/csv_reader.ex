@@ -116,4 +116,5 @@ defmodule ProcesadorArchivos.CSVReader do
   defp not_empty(_s, line, field), do: {:error, error_msg(line, "#{field} no puede estar vacío")}
 
   defp error_msg(line, msg), do: "Línea #{line}: #{msg}"
+  end
 end

@@ -87,6 +87,7 @@ defmodule ProcesadorArchivos.CSVReader do
       {:ok, d} -> {:ok, d}
       _ -> {:error, error_msg(line, "fecha '#{s}' inválida (YYYY-MM-DD)")}
     end
+  end
 
   defp parse_positive_float(s, line, field) do
     case Float.parse(s) do
@@ -116,5 +117,4 @@ defmodule ProcesadorArchivos.CSVReader do
   defp not_empty(_s, line, field), do: {:error, error_msg(line, "#{field} no puede estar vacío")}
 
   defp error_msg(line, msg), do: "Línea #{line}: #{msg}"
-  end
 end

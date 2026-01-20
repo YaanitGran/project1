@@ -6,9 +6,9 @@ defmodule ProcesadorArchivos.Worker do
   back to the coordinator pid provided.
   """
 
-  alias ProcesadorArchivos.Classsifier
+  alias ProcesadorArchivos.Classifier
   alias ProcesadorArchivos.{CSVReader, JSONReader, LogReader}
-  alias ProcesadorArchivos.CSVMetrics
+  alias ProcesadorArchivos.{CSVMetrics, JSONMetrics, LOGMetrics}
 
   require Logger
 
@@ -21,45 +21,42 @@ defmodule ProcesadorArchivos.Worker do
   end
 
   defp run(coord_pid, path, opts) do
-    type = Classsifier.classify(path)
+    type = Classifier.classify(path)
     {ok, payload} = attempt_with_retries(fn -> do_process(type, path, opts) end, opts)
     send(coord_pid, {:worker_result, self(), %{ok: ok, file: path, type: type, payload: payload}})
   end
 
+
   defp do_process(:csv, path, _opts) do
-    case CSVReader.read(path) do
-      {:ok, rows, row_errors} ->
-        metrics = CSVMetrics.per_file(path, rows)
-        {:ok, %{metrics: metrics, row_errors: row_errors}}
-
-      {:error, errs} ->
-        {:error, %{kind: :csv_parse, errors: errs}}
+      case CSVReader.read(path) do
+        {:ok, rows, row_errors} ->
+          metrics = CSVMetrics.per_file(path, rows)
+          {:ok, %{metrics: metrics, row_errors: row_errors}}
+      end
     end
-  end
 
-  defp do_process(:json, path, _opts) do
-    case JSONReader.read(path) do
-      {:ok, %{usuarios: users, sesiones: sess}, element_errors} ->
-        metrics = FileProcessor.Metrics.JSONMetrics.per_file(path, users, sess)
-        {:ok, %{metrics: metrics, element_errors: element_errors}}
+    defp do_process(:json, path, _opts) do
+      case JSONReader.read(path) do
+        {:ok, %{usuarios: users, sesiones: sess}, element_errors} ->
+          metrics = JSONMetrics.per_file(path, users, sess)
+          {:ok, %{metrics: metrics, element_errors: element_errors}}
 
-      {:error, errs} ->
-        {:error, %{kind: :json_parse, errors: errs}}
+        {:error, errs} ->
+          {:error, %{kind: :json_parse, errors: errs}}
+      end
     end
-  end
 
-  defp do_process(:log, path, opts) do
-    case LogReader.read(path) do
-      {:ok, entries, errs} ->
-        metrics = LOGMetrics.per_file(path, entries, opts)
-        {:ok, %{metrics: metrics, line_errors: errs}}
-
-      {:error, errs} ->
-        {:error, %{kind: :log_parse, errors: errs}}
+    defp do_process(:log, path, opts) do
+      case LogReader.read(path) do
+        {:ok, entries, line_errors} ->
+          metrics = LOGMetrics.per_file(path, entries, opts)
+          {:ok, %{metrics: metrics, line_errors: line_errors}}
+      end
     end
-  end
 
-  defp do_process(:unknown, path, _opts), do: {:error, %{kind: :unsupported, errors: ["Extensión no soportada: #{path}"]}}
+    defp do_process(:unknown, path, _opts),
+      do: {:error, %{kind: :unsupported, errors: ["Extensión no soportada: #{path}"]}}
+
 
   # Retries + timeout wrapper
   defp attempt_with_retries(fun, opts) do

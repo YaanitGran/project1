@@ -6,8 +6,7 @@ defmodule ProcesadorArchivos.Reporter do
   plus performance analysis and the final errors/warnings section.
   """
 
-  alias ProcesadorArchivos.{CSVMetrics, JSONMetrics, LOGMetrics}
-  alias ProcesadorArchivos.Classifier
+  alias ProcesadorArchivos.CSVMetrics
 
   @doc """
   Builds the full report string in Spanish.
@@ -262,12 +261,12 @@ defmodule ProcesadorArchivos.Reporter do
   end
 
   defp build_performance_section(opts) do
-    # This section is filled when the user runs `FileProcessor.benchmark/2`.
+    # This section is filled when the user runs `ProcesadorArchivos.benchmark/2`.
     # Here we just provide placeholders indicating how to obtain real values.
     """
     Para obtener esta sección con datos reales, ejecute:
 
-      iex> FileProcessor.benchmark("#{Map.get(opts, :input_root, "./data")}", %{max_workers: #{Map.get(opts, :max_workers)}})
+      iex> ProcesadorArchivos.benchmark("#{Map.get(opts, :input_root, "./data")}", %{max_workers: #{Map.get(opts, :max_workers)}})
       # => imprime comparación secuencial vs paralelo y factor de mejora.
 
     (En tiempo de ejecución normal, esta sección se deja informativa.

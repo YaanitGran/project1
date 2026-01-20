@@ -7,7 +7,6 @@ defmodule ProcesadorArchivos.Coordinator do
   """
 
   alias ProcesadorArchivos.Worker
-  alias ProcesadorArchivos.Classifier
 
   require Logger
 

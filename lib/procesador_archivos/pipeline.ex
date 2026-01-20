@@ -23,61 +23,60 @@ defmodule ProcesadorArchivos.Pipeline do
     {results, errors} =
       Enum.reduce(files, {[], []}, fn path, {acc_r, acc_e} ->
         type = Classifier.classify(path)
-        {res, errs} =
-          case type do
-            :csv ->
-              case CSVReader.read(path) do
-                {:ok, rows, row_errors} ->
-                  metrics = CSVMetrics.per_file(path, rows)
-                  {{path, type, metrics, %{metrics: metrics, row_errors: row_errors}}, row_errors}
-                {:error, errs} -> {nil, errs}
-              end
 
-            :json ->
-              case JSONReader.read(path) do
-                {:ok, %{usuarios: users, sesiones: sess}, element_errors} ->
-                  metrics = JSONMetrics.per_file(path, users, sess)
-                  {{path, type, metrics, %{metrics: metrics, element_errors: element_errors}}, element_errors}
-                {:error, errs} -> {nil, errs}
-              end
+        {res_item, errs_for_file} =
+                 case type do
+                   :csv ->
+                     case CSVReader.read(path) do
+                       {:ok, rows, row_errors} ->
+                         metrics = CSVMetrics.per_file(path, rows)
+                         {{path, type, metrics, %{metrics: metrics, row_errors: row_errors}}, row_errors}
+                     end
 
-            :log ->
-              case LogReader.read(path) do
-                {:ok, entries, errs} ->
-                  metrics = LOGMetrics.per_file(path, entries, opts)
-                  {{path, type, metrics, %{metrics: metrics, line_errors: errs}}, errs}
-                {:error, errs} -> {nil, errs}
-              end
+                   :json ->
+                     case JSONReader.read(path) do
+                       {:ok, %{usuarios: users, sesiones: sess}, element_errors} ->
+                         metrics = JSONMetrics.per_file(path, users, sess)
+                         {{path, type, metrics, %{metrics: metrics, element_errors: element_errors}}, element_errors}
 
-            :unknown ->
-              {nil, ["Extensión no soportada: #{path}"]}
-          end
+                       {:error, errs} ->
+                         {nil, errs}
+                     end
 
-        acc_r = if res, do: [res | acc_r], else: acc_r
-        acc_e = acc_e ++ errs
+                   :log ->
+                     case LogReader.read(path) do
+                       {:ok, entries, line_errors} ->
+                         metrics = LOGMetrics.per_file(path, entries, opts)
+                         {{path, type, metrics, %{metrics: metrics, line_errors: line_errors}}, line_errors}
+                     end
 
-        # progress (only count)
-        if Map.get(opts, :progress, true) do
-          processed = length(acc_r) + count_failed(acc_e)
-          IO.puts("Procesados #{processed}/#{length(files)}")
-        end
+                   :unknown ->
+                     {nil, ["Extensión no soportada: #{path}"]}
+                 end
 
-        {acc_r, acc_e}
-      end)
+               acc_r = if res_item, do: [res_item | acc_r], else: acc_r
+               acc_e = acc_e ++ errs_for_file
 
-    _duration_ms = System.convert_time_unit(System.monotonic_time() - start_ts, :native, :millisecond)
+               if Map.get(opts, :progress, true) do
+                 processed = length(acc_r) # mostramos solo válidos (como pediste: número, sin nombres)
+                 IO.puts("Procesados #{processed}/#{length(files)}")
+               end
 
-    runtime_info = %{
-      process_count: 1,
-      max_memory_mb: Float.round(:erlang.memory(:total) / (1024 * 1024), 2)
-    }
+               {acc_r, acc_e}
+             end)
 
-    {:ok, Enum.reverse(results), errors, runtime_info}
-  end
+           _duration_ms = System.convert_time_unit(System.monotonic_time() - start_ts, :native, :millisecond)
 
-  def run(files, %{mode: :parallel} = opts) do
-    Coordinator.run(files, opts)
-  end
+           runtime_info = %{
+             process_count: 1,
+             max_memory_mb: Float.round(:erlang.memory(:total) / (1024 * 1024), 2)
+           }
 
-  defp count_failed(_errs), do: 0
+           {:ok, Enum.reverse(results), errors, runtime_info}
+         end
+
+         def run(files, %{mode: :parallel} = opts) do
+           Coordinator.run(files, opts)
+         end
+
 end

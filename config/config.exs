@@ -1,6 +1,6 @@
 import Config
 
-config :file_processor, FileProcessor,
+config :procesador_archivos ProcesadorArchivos,
   max_workers: System.schedulers_online(),
   timeout_ms: 5_000,
   retries: 1,

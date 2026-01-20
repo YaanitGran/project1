@@ -122,7 +122,7 @@ defmodule ProcesadorArchivos.JSONReader do
     end
   end
 
-  defp non_empty(v, field), do: {:error, "Campo '#{field}' no puede estar vacío"}
+  defp non_empty(_v, field), do: {:error, "Campo '#{field}' no puede estar vacío"}
 
   defp iso8601(v, field) when is_binary(v) do
     case DateTime.from_iso8601(v) do
@@ -132,6 +132,17 @@ defmodule ProcesadorArchivos.JSONReader do
   end
   defp iso8601(v, field), do: {:error, "Campo '#{field}' debe ser string ISO-8601, recibido: #{inspect(v)}"}
 
-  defp string_list(v, field) when is_list(v) and Enum.all?(v, &is_binary/1), do: {:ok, v}
+  defp string_list(v, field) do
+    cond do
+      not is_list(v) ->
+        {:error, "Campo '#{field}' debe ser una lista"}
+
+      Enum.all?(v, &is_binary/1) ->
+        {:ok, v}
+
+      true ->
+        {:error, "Campo '#{field}' debe ser una lista de strings, recibido: #{inspect(v)}"}
+    end
+  end
   defp string_list(v, field), do: {:error, "Campo '#{field}' debe ser lista de strings, recibido: #{inspect(v)}"}
 end

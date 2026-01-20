@@ -117,4 +117,7 @@ defmodule ProcesadorArchivos.CSVReader do
 
   defp error_msg(line, msg), do: "Línea #{line}: #{msg}"
 end
+<<<<<<< HEAD
 ``
+=======
+>>>>>>> funcionalidad

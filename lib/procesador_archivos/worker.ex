@@ -6,9 +6,9 @@ defmodule ProcesadorArchivos.Worker do
   back to the coordinator pid provided.
   """
 
-  alias FileProcessor.Classsifier
-  alias FileProcessor.{CSVReader, JSONReader, LogReader}
-  alias FileProcessor.{CSVMetrics, JSONMetrics, LOGMetrics}
+  alias ProcesadorArchivos.Classsifier
+  alias ProcesadorArchivos.{CSVReader, JSONReader, LogReader}
+  alias ProcesadorArchivos.{CSVMetrics, JSONMetrics, LOGMetrics}
 
   require Logger
 

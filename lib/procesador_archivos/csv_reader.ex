@@ -38,6 +38,10 @@ defmodule ProcesadorArchivos.CSVReader do
       rows_stream =
         File.stream!(path)
         |> Stream.drop(1)
+        |> Stream.map(fn line ->
+                # Replace the escape sequence \" with ''
+                String.replace(line, "\"", "''")
+              end)
         |> CSV.parse_stream()
         |> Stream.with_index(2) # start at line 2 due to header
 

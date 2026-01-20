@@ -82,7 +82,7 @@ defmodule ProcesadorArchivos.CSVReader do
     end
   end
 
-  defp parse_date(s, line), do:
+  defp parse_date(s, line) do
     case Date.from_iso8601(s) do
       {:ok, d} -> {:ok, d}
       _ -> {:error, error_msg(line, "fecha '#{s}' inválida (YYYY-MM-DD)")}

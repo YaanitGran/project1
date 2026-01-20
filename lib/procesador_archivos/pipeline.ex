@@ -65,7 +65,7 @@ defmodule ProcesadorArchivos.Pipeline do
         {acc_r, acc_e}
       end)
 
-    duration_ms = System.convert_time_unit(System.monotonic_time() - start_ts, :native, :millisecond)
+    _duration_ms = System.convert_time_unit(System.monotonic_time() - start_ts, :native, :millisecond)
 
     runtime_info = %{
       process_count: 1,

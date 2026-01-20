@@ -81,7 +81,7 @@ defmodule ProcesadorArchivos.CSVMetrics do
   """
   def consolidate(file_metrics_list) do
     all_rows_sales = Enum.map(file_metrics_list, & &1.total_sales) |> Enum.sum()
-    unique_products_total =
+    _unique_products_total =
       file_metrics_list
       |> Enum.reduce(MapSet.new(), fn m, acc -> MapSet.put(acc, m.unique_products) end)
 

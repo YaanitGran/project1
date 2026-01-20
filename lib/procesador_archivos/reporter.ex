@@ -19,7 +19,7 @@ defmodule ProcesadorArchivos.Reporter do
         results: results,
         errors: errors,
         duration_ms: dur_ms,
-        runtime: runtime_info,
+        runtime: _runtime_info,
         options: opts
       }) do
     {csv_ms, json_ms, log_ms} = split_by_type(results)

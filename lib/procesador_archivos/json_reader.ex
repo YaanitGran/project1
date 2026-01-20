@@ -105,13 +105,13 @@ defmodule ProcesadorArchivos.JSONReader do
 
   # Validators (type checks)
 
-  defp int(v, field) when is_integer(v), do: {:ok, v}
+  defp int(v, _field) when is_integer(v), do: {:ok, v}
   defp int(v, field), do: {:error, "Campo '#{field}' debe ser entero, recibido: #{inspect(v)}"}
 
-  defp non_neg_int(v, field) when is_integer(v) and v >= 0, do: {:ok, v}
+  defp non_neg_int(v, _field) when is_integer(v) and v >= 0, do: {:ok, v}
   defp non_neg_int(v, field), do: {:error, "Campo '#{field}' debe ser entero no negativo, recibido: #{inspect(v)}"}
 
-  defp boolean(v, field) when is_boolean(v), do: {:ok, v}
+  defp boolean(v, _field) when is_boolean(v), do: {:ok, v}
   defp boolean(v, field), do: {:error, "Campo '#{field}' debe ser booleano, recibido: #{inspect(v)}"}
 
   defp non_empty(v, field) when is_binary(v) and byte_size(String.trim(v)) > 0, do: :ok

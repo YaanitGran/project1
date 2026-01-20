@@ -17,7 +17,7 @@ defmodule ProcesadorArchivos.Coordinator do
   """
   def run(files, opts) do
     parent = self()
-    coord = spawn(fn -> loop(%{
+    _coord = spawn(fn -> loop(%{
       parent: parent,
       queue: files,
       in_flight: %{},
@@ -109,7 +109,7 @@ defmodule ProcesadorArchivos.Coordinator do
   end
   defp finish_or_continue(state), do: loop(maybe_spawn_workers(state))
 
-  defp maybe_spawn_workers(%{queue: [], in_flight: in_flight, max_workers: max, opts: opts} = s)
+  defp maybe_spawn_workers(%{queue: [], in_flight: in_flight, max_workers: max, opts: _opts} = s)
        when map_size(in_flight) >= max, do: s
 
   defp maybe_spawn_workers(%{queue: [], in_flight: _} = s), do: s

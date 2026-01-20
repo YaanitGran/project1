@@ -132,6 +132,8 @@ defmodule ProcesadorArchivos.JSONReader do
   end
   defp iso8601(v, field), do: {:error, "Campo '#{field}' debe ser string ISO-8601, recibido: #{inspect(v)}"}
 
+  defp string_list(v, field), do: {:error, "Campo '#{field}' debe ser lista de strings, recibido: #{inspect(v)}"}
+
   defp string_list(v, field) do
     cond do
       not is_list(v) ->
@@ -144,5 +146,4 @@ defmodule ProcesadorArchivos.JSONReader do
         {:error, "Campo '#{field}' debe ser una lista de strings, recibido: #{inspect(v)}"}
     end
   end
-  defp string_list(v, field), do: {:error, "Campo '#{field}' debe ser lista de strings, recibido: #{inspect(v)}"}
 end

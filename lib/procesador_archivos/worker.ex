@@ -8,7 +8,7 @@ defmodule ProcesadorArchivos.Worker do
 
   alias ProcesadorArchivos.Classsifier
   alias ProcesadorArchivos.{CSVReader, JSONReader, LogReader}
-  alias ProcesadorArchivos.{CSVMetrics, JSONMetrics, LOGMetrics}
+  alias ProcesadorArchivos.CSVMetrics
 
   require Logger
 

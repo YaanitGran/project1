@@ -114,7 +114,14 @@ defmodule ProcesadorArchivos.JSONReader do
   defp boolean(v, _field) when is_boolean(v), do: {:ok, v}
   defp boolean(v, field), do: {:error, "Campo '#{field}' debe ser booleano, recibido: #{inspect(v)}"}
 
-  defp non_empty(v, field) when is_binary(v) and byte_size(String.trim(v)) > 0, do: :ok
+  defp non_empty(v, field) do
+    if is_binary(v) and String.trim(v) != "" do
+      :ok
+    else
+      {:error, "Campo '#{field}' no puede estar vacío"}
+    end
+  end
+
   defp non_empty(v, field), do: {:error, "Campo '#{field}' no puede estar vacío"}
 
   defp iso8601(v, field) when is_binary(v) do

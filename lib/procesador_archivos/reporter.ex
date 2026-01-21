@@ -269,9 +269,6 @@ defmodule ProcesadorArchivos.Reporter do
       iex> ProcesadorArchivos.benchmark("#{Map.get(opts, :input_root, "./data")}", %{max_workers: #{Map.get(opts, :max_workers)}})
       # => imprime comparación secuencial vs paralelo y factor de mejora.
 
-    (En tiempo de ejecución normal, esta sección se deja informativa.
-    Si deseas integrarla automáticamente, podemos modificar el pipeline para
-    ejecutar ambos modos antes de imprimir el reporte.)
     """
   end
 

@@ -6,7 +6,7 @@ defmodule ProcesadorArchivos.LOGMetrics do
   and top N repeated messages.
   """
 
-  @critical_levels ~w(FATAL)
+  @critical_levels ~w(ERROR FATAL)
 
   @doc """
   Returns a per-file metrics map from parsed log entries.
@@ -33,11 +33,11 @@ defmodule ProcesadorArchivos.LOGMetrics do
 
     # Components with most errors (ERROR + FATAL)
     error_components =
-      entries
-      |> Enum.filter(&(&1.level in ["ERROR", "FATAL"]))
-      |> Enum.group_by(& &1.component)
-      |> Enum.map(fn {comp, es} -> {comp, length(es)} end)
-      |> Enum.sort_by(fn {comp, cnt} -> {-cnt, comp} end)
+          entries
+          |> Enum.filter(&(&1.level in ["ERROR", "FATAL"]))
+          |> Enum.group_by(& &1.component)
+          |> Enum.map(fn {comp, es} -> {comp, length(es)} end)
+          |> Enum.sort_by(fn {comp, cnt} -> {-cnt, comp} end)
 
     top_error_component = if error_components == [], do: nil, else: hd(error_components)
 
@@ -48,7 +48,7 @@ defmodule ProcesadorArchivos.LOGMetrics do
       |> Enum.map(fn {h, es} -> {h, length(es)} end)
       |> Enum.sort_by(&elem(&1, 0))
 
-    # Time between critical (FATAL) errors
+    # Time between critical (ERROR/FATAL) errors
     critical =
       entries
       |> Enum.filter(&(&1.level in @critical_levels))

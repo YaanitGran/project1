@@ -118,16 +118,16 @@ defmodule ProcesadorArchivos.Reporter do
     :ok
   end
 
+
   defp split_by_type(results) do
-    Enum.reduce(results, {[], [], []}, fn {_path, type, metrics, _payload}, {c, j, l} ->
-      case type do
-        :csv -> {[metrics | c], j, l}
-        :json -> {c, [metrics | j], l}
-        :log -> {c, j, [metrics | l]}
-      end
+    Enum.reduce(results, {[], [], []}, fn
+      {_path, :csv, metrics, _payload}, {c, j, l} -> {[metrics | c], j, l}
+      {_path, :json, metrics, _payload}, {c, j, l} -> {c, [metrics | j], l}
+      {_path, :log, metrics, _payload}, {c, j, l} -> {c, j, [metrics | l]}
     end)
     |> then(fn {c, j, l} -> {Enum.reverse(c), Enum.reverse(j), Enum.reverse(l)} end)
   end
+
 
   defp render_csv_files([]), do: "(No se procesaron archivos CSV)\n"
   defp render_csv_files(list) do

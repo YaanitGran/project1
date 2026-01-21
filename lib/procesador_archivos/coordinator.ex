@@ -57,14 +57,15 @@ defmodule ProcesadorArchivos.Coordinator do
         end
 
         # aggregate
+
         {results, errors} =
           if ok do
-            {[{path, type, payload.metrics, payload}, state.results], state.errors ++ collect_errors(payload)}
+            { [ {path, type, payload.metrics, payload} | state.results ] , state.errors ++ collect_errors(payload) }
           else
-            # strategy mark_as_corrupt -> collect error
             err = format_error(path, type, payload)
-            {state.results, state.errors ++ [err]}
+            { state.results, state.errors ++ [err] }
           end
+
 
         new_state =
           state

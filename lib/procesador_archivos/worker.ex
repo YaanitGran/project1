@@ -30,8 +30,12 @@ defmodule ProcesadorArchivos.Worker do
   defp do_process(:csv, path, _opts) do
       case CSVReader.read(path) do
         {:ok, rows, row_errors} ->
-          metrics = CSVMetrics.per_file(path, rows)
-          {:ok, %{metrics: metrics, row_errors: row_errors}}
+          if row_errors != [] do
+            {:error, %{kind: :csv_has_corrupt_lines, errors: row_errors}}
+          else
+            metrics = CSVMetrics.per_file(path, rows)
+            {:ok, %{metrics: metrics, row_errors: row_errors}}
+          end
       end
     end
 

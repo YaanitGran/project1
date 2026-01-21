@@ -12,6 +12,24 @@ defmodule ProcesadorArchivos do
 
   @type mode :: :sequential | :parallel
 
+
+  defp merge_defaults(opts) do
+      defaults = %{
+        mode: :parallel,
+        max_workers: System.schedulers_online(),
+        timeout_ms: 5_000,
+        retries: 1,
+        retry_delay_ms: 200,
+        error_strategy: :mark_as_corrupt,
+        progress: true,
+        out: "output/reporte_final.txt",
+        top_n_log_messages: 3
+      }
+
+      Map.merge(defaults, Map.new(opts))
+    end
+
+
   @doc """
   Processes all supported files in a directory.
 
@@ -29,6 +47,7 @@ defmodule ProcesadorArchivos do
   Returns {:ok, consolidated_metrics_map}
   """
   def process_directory(dir, opts \\ %{}) when is_binary(dir) do
+    opts = merge_defaults(opts)
     files = Classifier.discover(dir)
     process_files(files, Map.put(opts, :input_root, dir))
   end
@@ -44,7 +63,7 @@ defmodule ProcesadorArchivos do
 
     {:ok, results, errors, runtime_info} = Pipeline.run(files, opts)
 
-    duration_ms = ms_since(start_ts)
+    duration_ms =   System.convert_time_unit(System.monotonic_time() - start_ts, :native, :millisecond)
     # Build the final text report and write it to file (and/or stdout)
     text_report =
       Reporter.build_report(%{
@@ -57,15 +76,15 @@ defmodule ProcesadorArchivos do
         runtime: runtime_info,
         options: opts
       })
-
-    :ok = Reporter.write(text_report, opts.out)
+    out_path = Map.get(opts, :out, "output/reporte_final.txt")
+    :ok = Reporter.write(text_report, out_path)
 
     {:ok,
      %{
        results: results,
        errors: errors,
        duration_ms: duration_ms,
-       out: opts.out
+       out: out_path
      }}
   end
 
@@ -78,15 +97,20 @@ defmodule ProcesadorArchivos do
 
     files = Classifier.discover(dir)
 
+    seq_opts = %{opts | mode: :sequential, progress: false}
+    par_opts = %{opts | mode: :parallel,   progress: false}
+
     # Sequential run
     t0 = System.monotonic_time()
     {:ok, _r_seq, _e_seq, runtime_seq} = Pipeline.run(files, %{opts | mode: :sequential})
-    t_seq = ms_since(t0)
+    t_seq = System.convert_time_unit(System.monotonic_time() - t0, :native, :millisecond)
+
 
     # Parallel run
     t1 = System.monotonic_time()
     {:ok, _r_par, _e_par, runtime_par} = Pipeline.run(files, %{opts | mode: :parallel})
-    t_par = ms_since(t1)
+    t_par = System.convert_time_unit(System.monotonic_time() - t1, :native, :millisecond)
+
 
     speedup = if t_par > 0, do: Float.round(t_seq / t_par, 2), else: :infinity
 
@@ -100,12 +124,37 @@ defmodule ProcesadorArchivos do
      }}
   end
 
-  defp merge_defaults(opts) do
-    cfg = Application.get_env(:file_processor, __MODULE__, [])
-    cfg_map = Map.new(cfg)
-    Map.merge(cfg_map, Enum.into(opts, %{}))
-    |> Map.update(:mode, :parallel, fn m -> m end)
-  end
 
-  defp ms_since(t0), do: System.convert_time_unit(System.monotonic_time() - t0, :native, :millisecond)
+  def procesar_con_opciones(dir, opciones \\ %{}) when is_binary(dir) and is_map(opciones) do
+      # timeout -> timeout_ms
+      opciones_norm =
+        opciones
+        |> Map.new()
+        |> then(fn m ->
+          case Map.pop(m, :timeout) do
+            {nil, m2} -> m2
+            {t, m2} -> Map.put(m2, :timeout_ms, t)
+          end
+        end)
+
+      # Calls API
+      _ = process_directory(dir, opciones_norm)
+      :ok
+    end
+
+
+    def benchmark_paralelo_vs_secuencial(dir) when is_binary(dir) do
+      {:ok, b} = benchmark(dir, %{progress: false})
+
+      t_seq = b.sequential.duration_ms
+      t_par = b.parallel.duration_ms
+      sp    = b.speedup
+
+      IO.puts("Secuencial: #{t_seq}ms")
+      IO.puts("Paralelo:   #{t_par}ms")
+      IO.puts("Mejora:     #{sp}x")
+
+      :ok
+    end
+
 end

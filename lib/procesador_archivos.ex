@@ -88,6 +88,157 @@ defmodule ProcesadorArchivos do
      }}
   end
 
+
+  @doc """
+  High–level error inspection function.
+
+  * Accepts:
+      - a single file
+      - a directory
+      - a list of files
+
+  * Behavior:
+      - If the input is a list or directory → reuse process_files/2 (NO custom inspection, NO individual report).
+      - If the input is a single file     → return a detailed inspection map (NO report generation).
+
+  """
+  def procesar_con_manejo_errores(path_or_list, opts \\ %{}) do
+    cond do
+      # CASE 1: explicit list of files
+      is_list(path_or_list) ->
+        ProcesadorArchivos.process_files(path_or_list, opts)
+
+      # CASE 2: directory
+      File.dir?(path_or_list) ->
+        files = ProcesadorArchivos.Classifier.discover(path_or_list)
+        ProcesadorArchivos.process_files(files, Map.put(opts, :input_root, path_or_list))
+
+      # CASE 3: single file inspection
+      File.regular?(path_or_list) ->
+        inspect_single_file(path_or_list)
+
+      # CASE 4: not valid
+      true ->
+        {:error, "Ruta inválida: #{path_or_list}"}
+    end
+  end
+
+
+  # Single–file inspection (NO reporter)
+  defp inspect_single_file(path) do
+    type = ProcesadorArchivos.Classifier.classify(path)
+
+    case type do
+      :csv  -> inspect_csv(path)
+      :json -> inspect_json(path)
+      :log  -> inspect_log(path)
+      _     -> %{estado: :error, errores: ["Tipo de archivo no soportado: #{path}"]}
+    end
+  end
+
+
+
+  # =============================
+  # CSV inspection (single file)
+  # =============================
+  defp inspect_csv(path) do
+    case ProcesadorArchivos.CSVReader.read(path) do
+      {:ok, rows, row_errors} ->
+        processed_lines = length(rows)
+        error_lines     = length(row_errors)
+
+        status =
+          if error_lines == 0, do: :ok, else: :parcial
+
+        parsed_errors =
+          Enum.map(row_errors, fn msg ->
+            case Regex.run(~r/^Línea\s+(\d+):\s+(.*)$/, msg) do
+              [_, line, message] -> {String.to_integer(line), message}
+              _ -> {:unknown, msg}
+            end
+          end)
+
+        %{
+          estado: status,
+          lineas_procesadas: processed_lines,
+          lineas_con_error: error_lines,
+          errores: parsed_errors
+        }
+
+      _ ->
+        %{estado: :error, errores: ["No se pudo leer #{path}"]}
+    end
+  end
+
+
+
+  # =============================
+  # JSON inspection
+  # =============================
+  defp inspect_json(path) do
+    case ProcesadorArchivos.JSONReader.read(path) do
+      {:ok, _data, element_errors} ->
+        status = if element_errors == [], do: :ok, else: :parcial
+
+        parsed =
+          Enum.map(element_errors, fn err ->
+            {extract_json_index(err), err}
+          end)
+
+        %{
+          estado: status,
+          lineas_con_error: length(element_errors),
+          errores: parsed
+        }
+
+      {:error, errs} ->
+        %{
+          estado: :parcial,
+          lineas_con_error: length(errs),
+          errores: Enum.map(errs, &{:unknown, &1})
+        }
+    end
+  end
+
+  defp extract_json_index(err) do
+    case Regex.run(~r/\[(\d+)\]/, err) do
+      [_, idx] -> String.to_integer(idx)
+      _ -> :unknown
+    end
+  end
+
+
+
+  # =============================
+  # LOG inspection
+  # =============================
+  defp inspect_log(path) do
+    case ProcesadorArchivos.LogReader.read(path) do
+      {:ok, entries, line_errors} ->
+        status =
+          if line_errors == [], do: :ok, else: :parcial
+
+        parsed =
+          Enum.map(line_errors, fn msg ->
+            case Regex.run(~r/^Línea\s+(\d+):\s+(.*)$/, msg) do
+              [_, line, message] -> {String.to_integer(line), message}
+              _ -> {:unknown, msg}
+            end
+          end)
+
+        %{
+          estado: status,
+          lineas_procesadas: length(entries),
+          lineas_con_error: length(line_errors),
+          errores: parsed
+        }
+
+      _ ->
+        %{estado: :error, errores: ["No se pudo leer #{path}"]}
+    end
+  end
+
+
   @doc """
   Benchmarks the same directory in sequential and parallel modes and produces
   the performance section in the final report.

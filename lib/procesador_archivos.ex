@@ -97,8 +97,8 @@ defmodule ProcesadorArchivos do
 
     files = Classifier.discover(dir)
 
-    seq_opts = %{opts | mode: :sequential, progress: false}
-    par_opts = %{opts | mode: :parallel,   progress: false}
+    _seq_opts = %{opts | mode: :sequential, progress: false}
+    _par_opts = %{opts | mode: :parallel,   progress: false}
 
     # Sequential run
     t0 = System.monotonic_time()

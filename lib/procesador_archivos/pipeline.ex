@@ -1,15 +1,17 @@
 
 defmodule ProcesadorArchivos.Pipeline do
   @moduledoc """
-  Orquestación de ejecución:
-    - :sequential   → procesamiento en un solo proceso
-    - :parallel     → procesamiento paralelo usando Task.async_stream/3 (sin rehacer arquitectura)
+  Orchestrates the execution in two modes:
 
-  Retorna siempre:
+    * :sequential  - single-process reduction
+    * :parallel    - Task.async_stream/3 with per-file isolation and timeout handling
+
+  Always returns:
     {:ok, results, errors, runtime_info}
 
-  * results: lista de {path, type, per_file_metrics, payload}
-  * errors : lista de strings (mensajes de error acumulados)
+  Where:
+    * results :: [{path, type, per_file_metrics, payload}]
+    * errors  :: [string]
   """
 
   alias ProcesadorArchivos.Classifier
@@ -17,14 +19,16 @@ defmodule ProcesadorArchivos.Pipeline do
   alias ProcesadorArchivos.{CSVMetrics, JSONMetrics, LOGMetrics}
 
   # ===============================
-  # sequential mode
+  # SEQUENTIAL MODE
   # ===============================
+
   @doc """
-  Ejecuta el flujo en modo indicado en opts. Para :sequential reduce de a 1.
+  Runs the pipeline in sequential mode (one file at a time).
+  Prints 'Procesados X/Y' if `opts.progress` is true.
   """
   def run(files, %{mode: :sequential} = opts) do
     start_ts = System.monotonic_time()
-    total = length(files)
+    total     = length(files)
     show_prog = Map.get(opts, :progress, true)
 
     {results, errors, _k} =
@@ -44,18 +48,21 @@ defmodule ProcesadorArchivos.Pipeline do
   end
 
   # ===============================
-  # Parallel mode (Task.async_stream)
+  # PARALLEL MODE (Task.async_stream)
   # ===============================
-  def run(files, %{mode: :parallel} = opts) do
-    start_ts = System.monotonic_time()
 
-    max_conc = Map.get(opts, :max_workers, System.schedulers_online())
-    timeout  = Map.get(opts, :timeout_ms, 5_000)
+
+  def run(files_param, %{mode: :parallel} = opts) do
+    # Keep a local 'files' variable to avoid scope mix-ups when copying patches.
+    files     = files_param
+    _start_ts  = System.monotonic_time()
+    max_conc  = Map.get(opts, :max_workers, System.schedulers_online())
+    timeout   = Map.get(opts, :timeout_ms, 5_000)
     show_prog = Map.get(opts, :progress, true)
-    total = length(files)
+    total     = length(files)
 
+    # Worker function: per-file logic using the same policy as sequential.
     work = fn path ->
-
       case do_one_file(path, opts) do
         {:ok, tuple}     -> {:ok, tuple}
         {:error, errors} -> {:error, errors}
@@ -64,30 +71,48 @@ defmodule ProcesadorArchivos.Pipeline do
 
     stream =
       Task.async_stream(files, work,
-        ordered: false,
+        ordered: true,                 # keep input order to zip with 'files'
         max_concurrency: max_conc,
-        timeout: timeout
+        timeout: timeout,
+        on_timeout: :kill_task         # do not abort the whole stream on timeouts
       )
 
     {results, errors, _k} =
-      Enum.reduce(stream, {[], [], 0}, fn
-        {:ok, {:ok, tuple}}, {acc_r, acc_e, i} ->
+      files
+      |> Enum.zip(stream)              # pair {path, result}
+      |> Enum.reduce({[], [], 0}, fn
+        {_path, {:ok, {:ok, tuple}}}, {acc_r, acc_e, i} ->
           if show_prog, do: IO.puts("Procesados #{i + 1}/#{total}")
           {[tuple | acc_r], acc_e, i + 1}
 
-        {:ok, {:error, errs}}, {acc_r, acc_e, i} ->
+        {_path, {:ok, {:error, errs}}}, {acc_r, acc_e, i} ->
           if show_prog, do: IO.puts("Procesados #{i + 1}/#{total}")
           {acc_r, acc_e ++ errs, i + 1}
 
-        {:exit, reason}, {acc_r, acc_e, i} ->
+        {path, {:exit, :timeout}}, {acc_r, acc_e, i} ->
           if show_prog, do: IO.puts("Procesados #{i + 1}/#{total}")
-          msg = "Task crash: #{inspect(reason)}"
+          msg = "#{path}: Tiempo de espera excedido (timeout)"
+          {acc_r, [msg | acc_e], i + 1}
+
+        {path, {:exit, reason}}, {acc_r, acc_e, i} ->
+          if show_prog, do: IO.puts("Procesados #{i + 1}/#{total}")
+          msg = "#{path}: Task crash: #{inspect(reason)}"
           {acc_r, [msg | acc_e], i + 1}
       end)
 
-    {:ok, Enum.reverse(results), errors, runtime_info(start_ts, max_conc)}
+    runtime_info = %{
+      process_count: max_conc,
+      max_memory_mb: Float.round(:erlang.memory(:total) / (1024 * 1024), 2)
+    }
+
+    {:ok, Enum.reverse(results), errors, runtime_info}
   end
 
+  # ===============================
+  # PER-FILE LOGIC (SHARED)
+  # ===============================
+
+  @doc false
   # Returns:
   #   {:ok, {path, type, metrics, payload}}
   #   {:error, [msg1, msg2, ...]}
@@ -96,6 +121,7 @@ defmodule ProcesadorArchivos.Pipeline do
 
     case type do
       :csv ->
+        # Policy: if there is at least ONE corrupt row, the whole file is considered error (no metrics).
         case CSVReader.read(path) do
           {:ok, rows, row_errors} ->
             if row_errors != [] do
@@ -111,6 +137,7 @@ defmodule ProcesadorArchivos.Pipeline do
         end
 
       :json ->
+        # JSON: malformed file -> error. Element-level errors do not invalidate the whole file.
         case JSONReader.read(path) do
           {:ok, %{usuarios: users, sesiones: sess}, element_errors} ->
             metrics = JSONMetrics.per_file(path, users, sess)
@@ -132,6 +159,11 @@ defmodule ProcesadorArchivos.Pipeline do
     end
   end
 
+  # ===============================
+  # RUNTIME HELPERS
+  # ===============================
+
+  @doc false
   defp runtime_info(start_ts, proc_count_guess) do
     %{
       process_count: proc_count_guess,
@@ -140,6 +172,7 @@ defmodule ProcesadorArchivos.Pipeline do
     }
   end
 
+  @doc false
   defp elapsed_ms(t0),
     do: System.convert_time_unit(System.monotonic_time() - t0, :native, :millisecond)
 end

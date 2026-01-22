@@ -253,12 +253,24 @@ defmodule ProcesadorArchivos.Reporter do
     |> Enum.join("\n")
   end
 
+
   defp render_errors([]), do: "(Sin errores)\n"
+
   defp render_errors(errs) do
     errs
-    |> Enum.map(&("✗ " <> &1))
+    |> Enum.map(fn err ->
+      cond do
+        String.contains?(err, "timeout") or
+        String.contains?(err, "Tiempo de espera excedido") ->
+          "⚠ " <> err
+
+        true ->
+          "✗ " <> err
+      end
+    end)
     |> Enum.join("\n")
   end
+
 
   defp build_performance_section(opts) do
     # This section is filled when the user runs `ProcesadorArchivos.benchmark/2`.

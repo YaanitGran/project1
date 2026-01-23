@@ -1,5 +1,5 @@
 
-defmodule ProcesadorArchivos.JSONReader do
+defmodule PAI.JSONReader do
   @moduledoc """
   JSON reader for 'usuarios' and 'sesiones' blocks with strict type checking.
   Whole-file JSON parsing errors are reported as a single parse error.

@@ -1,5 +1,5 @@
 
-defmodule ProcesadorArchivos.Classifier do
+defmodule PAI.Classifier do
   @moduledoc """
   Discovers and classifies supported files by extension.
   """

@@ -1,12 +1,12 @@
 
-defmodule ProcesadorArchivos.Coordinator do
+defmodule PAI.Coordinator do
   @moduledoc """
   Coordinator process that manages a pool of worker processes for files.
   It prints progress as 'Procesados X/Y' without filenames and aggregates results
   and errors to be returned to the caller.
   """
 
-  alias ProcesadorArchivos.Worker
+  alias PAI.Worker
 
   require Logger
 

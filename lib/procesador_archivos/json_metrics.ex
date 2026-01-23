@@ -1,5 +1,5 @@
 
-defmodule ProcesadorArchivos.JSONMetrics do
+defmodule PAI.JSONMetrics do
   @moduledoc """
   Computes metrics for JSON user/session data per file.
   No consolidation requested for JSON.

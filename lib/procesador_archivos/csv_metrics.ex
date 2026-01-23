@@ -1,5 +1,5 @@
 
-defmodule ProcesadorArchivos.CSVMetrics do
+defmodule PAI.CSVMetrics do
   @moduledoc """
   Computes CSV (ventas) metrics per file and supports consolidation across CSV files.
   """

@@ -1,12 +1,12 @@
 
-defmodule ProcesadorArchivos.Reporter do
+defmodule PAI.Reporter do
   @moduledoc """
   Builds and writes the final Spanish text report according to the template.
   Includes per-file metrics for CSV/JSON/LOG and consolidated section only for CSV,
   plus performance analysis and the final grouped errors/warnings section.
   """
 
-  alias ProcesadorArchivos.CSVMetrics
+  alias PAI.CSVMetrics
 
   @doc """
   Builds the full report string in Spanish.

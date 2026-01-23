@@ -1,5 +1,5 @@
 
-defmodule ProcesadorArchivos.Pipeline do
+defmodule PAI.Pipeline do
   @moduledoc """
   Orchestrates the execution in two modes:
 
@@ -14,9 +14,9 @@ defmodule ProcesadorArchivos.Pipeline do
     * errors  :: [string]
   """
 
-  alias ProcesadorArchivos.Classifier
-  alias ProcesadorArchivos.{CSVReader, JSONReader, LogReader}
-  alias ProcesadorArchivos.{CSVMetrics, JSONMetrics, LOGMetrics}
+  alias PAI.Classifier
+  alias PAI.{CSVReader, JSONReader, LogReader}
+  alias PAI.{CSVMetrics, JSONMetrics, LOGMetrics}
 
   # ===============================
   # SEQUENTIAL MODE

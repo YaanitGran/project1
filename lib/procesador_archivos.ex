@@ -8,7 +8,7 @@ defmodule ProcesadorArchivos do
   messages appear in Spanish.
   """
 
-  alias ProcesadorArchivos.{Classifier, Pipeline, Reporter}
+  alias PAI.{Classifier, Pipeline, Reporter}
 
   @type mode :: :sequential | :parallel
 

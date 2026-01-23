@@ -1,5 +1,5 @@
 
-defmodule ProcesadorArchivos.LogReader do
+defmodule PAI.LogReader do
   @moduledoc """
   LOG reader with strict pattern:
     YYYY-MM-DD HH:MM:SS [LEVEL] [COMPONENT] Message

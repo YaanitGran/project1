@@ -1,14 +1,14 @@
 
-defmodule ProcesadorArchivos.Worker do
+defmodule PAI.Worker do
   @moduledoc """
   Worker process that handles a single file with timeout and retries.
   It sends {:worker_result, self(), %{ok: boolean, file: path, type: type, result_or_error: ...}}
   back to the coordinator pid provided.
   """
 
-  alias ProcesadorArchivos.Classifier
-  alias ProcesadorArchivos.{CSVReader, JSONReader, LogReader}
-  alias ProcesadorArchivos.{CSVMetrics, JSONMetrics, LOGMetrics}
+  alias PAI.Classifier
+  alias PAI.{CSVReader, JSONReader, LogReader}
+  alias PAI.{CSVMetrics, JSONMetrics, LOGMetrics}
 
   require Logger
 

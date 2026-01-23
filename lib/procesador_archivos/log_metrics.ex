@@ -1,5 +1,5 @@
 
-defmodule ProcesadorArchivos.LOGMetrics do
+defmodule PAI.LOGMetrics do
   @moduledoc """
   Computes metrics for LOG files per file, including distribution by level,
   top components with errors, hourly distribution, time deltas between FATAL,

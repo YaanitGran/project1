@@ -1,5 +1,5 @@
 
-defmodule ProcesadorArchivos.CSVReader do
+defmodule PAI.CSVReader do
   @moduledoc """
   CSV reader (ventas) with strict validation and specific error messages.
 

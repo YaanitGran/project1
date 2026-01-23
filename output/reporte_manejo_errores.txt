@@ -2,71 +2,40 @@
                     REPORTE DE PROCESAMIENTO DE ARCHIVOS
 ================================================================================
 
-Fecha de generación: 2026-01-23 05:12:19.651000Z
-Directorio procesado: (lista de archivos)
-Modo de procesamiento: [Paralelo]
+Fecha de generación: 2026-01-22 18:41:26.623000Z
+Directorio procesado: data/ventas_corrupto.csv
+Modo de procesamiento: [Secuencial]
 
 --------------------------------------------------------------------------------
 RESUMEN EJECUTIVO
 --------------------------------------------------------------------------------
-Total de archivos procesados: 3
-  - Archivos CSV: 1
-  - Archivos JSON: 1
-  - Archivos LOG: 1
+Total de archivos procesados: 0
+  - Archivos CSV: 0
+  - Archivos JSON: 0
+  - Archivos LOG: 0
 
-Tiempo total de procesamiento: 0.001 segundos
-Archivos con errores: 0
-Tasa de éxito: 100.0%
+Tiempo total de procesamiento: 0.0 segundos
+Archivos con errores: 1
+Tasa de éxito: 0.0%
 
 --------------------------------------------------------------------------------
 MÉTRICAS DE ARCHIVOS CSV
 --------------------------------------------------------------------------------
-[Archivo: C:\Users\yaani\AppData\Local\Temp/pa_tests_710/data_1094/ventas_ok.csv]
-  * Total de ventas: $120.00
-  * Productos únicos: 1
-  * Producto más vendido: Mouse (1 unidades)
-  * Categoría top: Periféricos ($120.00)
-  * Descuento promedio: 0.0%
-  * Período: 2024-01-02 a 2024-01-02
+(No se procesaron archivos CSV)
 
 
-Totales Consolidados CSV:
-  - Ventas totales: $120.00
-  - Productos únicos totales: 1
 
 
 --------------------------------------------------------------------------------
 MÉTRICAS DE ARCHIVOS JSON
 --------------------------------------------------------------------------------
-[Archivo: C:\Users\yaani\AppData\Local\Temp/pa_tests_710/data_1094/usuarios.json]
-  * Usuarios registrados: 1
-  * Usuarios activos: 1 (100.0%)
-  * Duración promedio de sesión: 5.0 minutos
-  * Páginas visitadas totales: 2
-  * Top acciones:
-      1. login (1 veces)
-    2. logout (1 veces)
-  * Hora pico de actividad: 9:00
+(No se procesaron archivos JSON)
 
 
 --------------------------------------------------------------------------------
 MÉTRICAS DE ARCHIVOS LOG
 --------------------------------------------------------------------------------
-[Archivo: C:\Users\yaani\AppData\Local\Temp/pa_tests_710/data_1094/sistema.log]
-  * Total de entradas: 0
-  * Distribución por nivel:
-      - DEBUG: 0 (0.0%)
-      - INFO: 0 (0.0%)
-      - WARN: 0 (0.0%)
-      - ERROR: 0 (0.0%)
-      - FATAL: 0 (0.0%)
-  * Componente más problemático: N/A
-  * Distribución por hora:
-
-  * Tiempo promedio entre errores (ERROR/FATAL): N/A
-  * Patrones de error recurrentes (Top 3):
-
-
+(No se procesaron archivos LOG)
 
 
 --------------------------------------------------------------------------------
@@ -74,15 +43,15 @@ ANÁLISIS DE RENDIMIENTO
 --------------------------------------------------------------------------------
 Para obtener esta sección con datos reales, ejecute:
 
-  iex> ProcesadorArchivos.benchmark_paralelo_vs_secuencial("./data", %{max_workers: 16})
+  iex> ProcesadorArchivos.benchmark("./data", %{max_workers: })
   # => imprime comparación secuencial vs paralelo y factor de mejora.
+
 
 
 --------------------------------------------------------------------------------
 ERRORES Y ADVERTENCIAS
 --------------------------------------------------------------------------------
-(Sin errores)
-
+✗ Archivo data/ventas_corrupto.csv (csv): csv_has_corrupt_lines -> Línea 2: precio_unitario no es un número válido: 'ERROR' | Línea 3: cantidad no es un entero válido: '' | Línea 4: cantidad no es un entero válido: 'abc' | Línea 5: Número de columnas inválido (2 != 6) | Línea 6: precio_unitario debe ser > 0, recibido -99.99 | Línea 7: descuento=-10.0 fuera de rango [0,100] | Línea 8: Número de columnas inválido (1 != 6) | Línea 10: producto no puede estar vacío | Línea 11: fecha '' inválida (YYYY-MM-DD)
 
 ================================================================================
                            FIN DEL REPORTE

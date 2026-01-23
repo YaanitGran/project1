@@ -436,7 +436,7 @@ defmodule ProcesadorArchivos.Reporter do
     """
     Para obtener esta sección con datos reales, ejecute:
 
-      iex> ProcesadorArchivos.benchmark("#{Map.get(opts, :input_root, "./data")}", %{max_workers: #{Map.get(opts, :max_workers)}})
+      iex> ProcesadorArchivos.benchmark_paralelo_vs_secuencial("#{Map.get(opts, :input_root, "./data")}", %{max_workers: #{Map.get(opts, :max_workers)}})
       # => imprime comparación secuencial vs paralelo y factor de mejora.
     """
   end

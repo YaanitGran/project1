@@ -72,7 +72,7 @@ defmodule ProcesadorArchivos.Reporter do
       - Archivos JSON: #{counts.json}
       - Archivos LOG: #{counts.log}
 
-    Tiempo total de procesamiento: #{Float.round(dur_ms / 1000.0, 2)} segundos
+    Tiempo total de procesamiento: #{fmt_seconds3(dur_ms)} segundos
     Archivos con errores: #{error_files_count}
     Tasa de éxito: #{success_rate}%
 
@@ -394,6 +394,12 @@ defmodule ProcesadorArchivos.Reporter do
     # format with thousands separator ',' and decimal '.'
     :erlang.float_to_binary(v, decimals: 2)
     |> String.replace(~r/(?<=\d)(?=(\d{3})+\.)/, ",")
+  end
+
+  # Formats milliseconds as seconds with exactly 3 decimals, e.g., "0.237"
+  defp fmt_seconds3(ms) when is_integer(ms) or is_float(ms) do
+    secs = ms / 1000.0
+    :erlang.float_to_binary(secs, decimals: 3)
   end
 
   defp pct(part, total) when total > 0, do: Float.round(part * 100.0 / total, 1)

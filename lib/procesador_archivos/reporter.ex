@@ -3,7 +3,7 @@ defmodule ProcesadorArchivos.Reporter do
   @moduledoc """
   Builds and writes the final Spanish text report according to the template.
   Includes per-file metrics for CSV/JSON/LOG and consolidated section only for CSV,
-  plus performance analysis and the final errors/warnings section.
+  plus performance analysis and the final grouped errors/warnings section.
   """
 
   alias ProcesadorArchivos.CSVMetrics
@@ -11,7 +11,6 @@ defmodule ProcesadorArchivos.Reporter do
   @doc """
   Builds the full report string in Spanish.
   """
-
   def build_report(%{
         timestamp: ts,
         input_root: input_root,
@@ -24,7 +23,8 @@ defmodule ProcesadorArchivos.Reporter do
       }) do
     {csv_ms, json_ms, log_ms} = split_by_type(results)
 
-    csv_consolidated = if csv_ms == [], do: nil, else: CSVMetrics.consolidate(csv_ms)
+    csv_consolidated =
+      if csv_ms == [], do: nil, else: CSVMetrics.consolidate(csv_ms)
 
     total_files = length(results)
     counts = %{
@@ -33,7 +33,7 @@ defmodule ProcesadorArchivos.Reporter do
       log: length(log_ms)
     }
 
-    # --- NEW: group errors by file/type and compute unique error file count ---
+    # --- Group errors by file/type and compute unique error file count ---
     errors_group = group_errors_by_file(errors)
     error_files_count = map_size(errors_group)
 
@@ -54,6 +54,16 @@ defmodule ProcesadorArchivos.Reporter do
     ts_str = ts |> DateTime.shift_zone!("Etc/UTC") |> to_string()
 
     perf_section = build_performance_section(opts)
+
+    # --- Assemble only non-empty metric sections ---
+    metrics_sections =
+      [
+        metrics_section_csv(csv_ms, csv_consolidated),
+        metrics_section_json(json_ms),
+        metrics_section_log(log_ms, opts)
+      ]
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.join("\n")
 
     """
     ================================================================================
@@ -76,22 +86,7 @@ defmodule ProcesadorArchivos.Reporter do
     Archivos con errores: #{error_files_count}
     Tasa de éxito: #{success_rate}%
 
-    --------------------------------------------------------------------------------
-    MÉTRICAS DE ARCHIVOS CSV
-    --------------------------------------------------------------------------------
-    #{render_csv_files(csv_ms)}
-
-    #{render_csv_consolidated(csv_consolidated)}
-
-    --------------------------------------------------------------------------------
-    MÉTRICAS DE ARCHIVOS JSON
-    --------------------------------------------------------------------------------
-    #{render_json_files(json_ms)}
-
-    --------------------------------------------------------------------------------
-    MÉTRICAS DE ARCHIVOS LOG
-    --------------------------------------------------------------------------------
-    #{render_log_files(log_ms, opts)}
+    #{metrics_sections}
 
     --------------------------------------------------------------------------------
     ANÁLISIS DE RENDIMIENTO
@@ -109,7 +104,6 @@ defmodule ProcesadorArchivos.Reporter do
     """
   end
 
-
   @doc """
   Writes the report either to file (out path) or stdout if nil.
   """
@@ -120,12 +114,15 @@ defmodule ProcesadorArchivos.Reporter do
     IO.puts("Reporte guardado en #{out_path}")
     :ok
   end
+
   def write(report_string, nil) do
     IO.puts(report_string)
     :ok
   end
 
-
+  # ------------------------------------------------------------
+  # Split results by type
+  # ------------------------------------------------------------
   defp split_by_type(results) do
     Enum.reduce(results, {[], [], []}, fn
       {_path, :csv, metrics, _payload}, {c, j, l} -> {[metrics | c], j, l}
@@ -135,7 +132,9 @@ defmodule ProcesadorArchivos.Reporter do
     |> then(fn {c, j, l} -> {Enum.reverse(c), Enum.reverse(j), Enum.reverse(l)} end)
   end
 
-
+  # ------------------------------------------------------------
+  # CSV metrics block
+  # ------------------------------------------------------------
   defp render_csv_files([]), do: "(No se procesaron archivos CSV)\n"
   defp render_csv_files(list) do
     list
@@ -180,6 +179,9 @@ defmodule ProcesadorArchivos.Reporter do
     """
   end
 
+  # ------------------------------------------------------------
+  # JSON metrics block
+  # ------------------------------------------------------------
   defp render_json_files([]), do: "(No se procesaron archivos JSON)\n"
   defp render_json_files(list) do
     list
@@ -210,14 +212,17 @@ defmodule ProcesadorArchivos.Reporter do
     |> Enum.join("\n")
   end
 
-  defp render_log_files([],_opts), do: "(No se procesaron archivos LOG)\n"
+  # ------------------------------------------------------------
+  # LOG metrics block
+  # ------------------------------------------------------------
+  defp render_log_files([], _opts), do: "(No se procesaron archivos LOG)\n"
   defp render_log_files(list, opts) do
     n = Map.get(opts, :top_n_log_messages, 3)
 
     list
     |> Enum.map(fn m ->
       dist =
-        ["DEBUG","INFO","WARN","ERROR","FATAL"]
+        ["DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
         |> Enum.map(fn lvl ->
           cnt = Map.get(m.by_level, lvl, 0)
           pc = Map.get(m.by_level_pct, lvl, 0.0)
@@ -242,7 +247,8 @@ defmodule ProcesadorArchivos.Reporter do
         |> Enum.map(fn {{msg, cnt}, idx} -> "    #{idx}. \"#{msg}\" (#{cnt} ocurrencias)" end)
         |> Enum.join("\n")
 
-      avgf = m.avg_seconds_between_fatal || "N/A"
+      # If you renamed metric to avg_seconds_between_error, adjust here.
+      avgf = Map.get(m, :avg_seconds_between_error) || Map.get(m, :avg_seconds_between_fatal) || "N/A"
 
       """
       [Archivo: #{m.file}]
@@ -252,7 +258,7 @@ defmodule ProcesadorArchivos.Reporter do
         * Componente más problemático: #{top_comp}
         * Distribución por hora:
       #{hourly}
-        * Tiempo promedio entre errores FATAL: #{avgf}
+        * Tiempo promedio entre errores (ERROR/FATAL): #{avgf}
         * Patrones de error recurrentes (Top #{n}):
       #{top_msgs}
       """
@@ -261,12 +267,56 @@ defmodule ProcesadorArchivos.Reporter do
   end
 
   # ------------------------------------------------------------
-  # Groups raw error strings by (path, type) to render one block per file
+  # Conditional metric sections (print only when present)
+  # ------------------------------------------------------------
+  defp metrics_section_csv(csv_ms, csv_consolidated) do
+    if csv_ms == [] do
+      ""
+    else
+      """
+      --------------------------------------------------------------------------------
+      MÉTRICAS DE ARCHIVOS CSV
+      --------------------------------------------------------------------------------
+      #{render_csv_files(csv_ms)}
+
+      #{render_csv_consolidated(csv_consolidated)}
+      """
+    end
+  end
+
+  defp metrics_section_json(json_ms) do
+    if json_ms == [] do
+      ""
+    else
+      """
+      --------------------------------------------------------------------------------
+      MÉTRICAS DE ARCHIVOS JSON
+      --------------------------------------------------------------------------------
+      #{render_json_files(json_ms)}
+      """
+    end
+  end
+
+  defp metrics_section_log(log_ms, opts) do
+    if log_ms == [] do
+      ""
+    else
+      """
+      --------------------------------------------------------------------------------
+      MÉTRICAS DE ARCHIVOS LOG
+      --------------------------------------------------------------------------------
+      #{render_log_files(log_ms, opts)}
+      """
+    end
+  end
+
+  # ------------------------------------------------------------
+  # Group raw error strings by (path, type) to render one block per file
   # ------------------------------------------------------------
   defp group_errors_by_file(errs) do
     Enum.reduce(errs, %{}, fn err, acc ->
       cond do
-        # CSV aggregated message the pipeline emits:
+        # CSV aggregated message from pipeline:
         # "Archivo <path> (csv): csv_has_corrupt_lines -> Línea 2: ... | Línea 3: ..."
         Regex.match?(~r/^Archivo\s+(.+?)\s+\(csv\):\s+csv_has_corrupt_lines\s+->\s+(.+)$/u, err) ->
           [_, path, joined] =
@@ -288,7 +338,7 @@ defmodule ProcesadorArchivos.Reporter do
           [_, path] = Regex.run(~r/^(.+?):\s+Tiempo de espera excedido.*$/u, err)
           Map.update(acc, {path, :timeout}, [err], &[err | &1])
 
-        # Generic "<path>: <message>" fallback
+        # Generic "<path>: <message>"
         Regex.match?(~r/^(.+?):\s+(.+)$/u, err) ->
           [_, path, msg] = Regex.run(~r/^(.+?):\s+(.+)$/u, err)
           Map.update(acc, {path, :unknown}, [msg], &[msg | &1])
@@ -303,7 +353,7 @@ defmodule ProcesadorArchivos.Reporter do
   end
 
   # ------------------------------------------------------------
-  # Renders grouped errors: one block per file with nested bullets
+  # Render grouped errors: one block per file with nested bullets
   # ------------------------------------------------------------
   defp render_grouped_errors(group) when map_size(group) == 0 do
     "(Sin errores)\n"
@@ -377,7 +427,9 @@ defmodule ProcesadorArchivos.Reporter do
     |> Enum.map(&elem(&1, 1))
   end
 
-
+  # ------------------------------------------------------------
+  # Performance section placeholder
+  # ------------------------------------------------------------
   defp build_performance_section(opts) do
     # This section is filled when the user runs `ProcesadorArchivos.benchmark/2`.
     # Here we just provide placeholders indicating how to obtain real values.
@@ -386,10 +438,12 @@ defmodule ProcesadorArchivos.Reporter do
 
       iex> ProcesadorArchivos.benchmark("#{Map.get(opts, :input_root, "./data")}", %{max_workers: #{Map.get(opts, :max_workers)}})
       # => imprime comparación secuencial vs paralelo y factor de mejora.
-
     """
   end
 
+  # ------------------------------------------------------------
+  # Formatting helpers
+  # ------------------------------------------------------------
   defp fmt_money(v) do
     # format with thousands separator ',' and decimal '.'
     :erlang.float_to_binary(v, decimals: 2)

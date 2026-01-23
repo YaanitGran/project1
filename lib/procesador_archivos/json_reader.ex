@@ -48,19 +48,6 @@ defmodule ProcesadorArchivos.JSONReader do
 
     # Infer categories for malformed JSON (DecodeError), inspecting both the error message and the raw content.
 
-    defp decode_categories(bin, msg) do
-      []
-      |> maybe(:comillas_faltantes,     String.contains?(msg, "unexpected byte") or String.contains?(msg, "invalid string"))
-      |> maybe(:comas_faltantes,        String.contains?(msg, "expected comma"))
-      |> maybe(:llaves_sin_comillas,    String.contains?(msg, "expected string for key") or String.contains?(msg, "object keys must be strings"))
-      |> maybe(:corchetes_sin_cerrar,   String.contains?(msg, "unexpected end"))
-      |> maybe(:comentarios_no_validos, String.contains?(bin, "//") or String.contains?(bin, "/*"))
-      |> default_other()
-    end
-
-
-
-
     defp default_other([]), do: [:otro]
     defp default_other(list), do: Enum.reverse(list)
 

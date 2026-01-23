@@ -280,10 +280,11 @@ defmodule ProcesadorArchivos do
       - If the input is a list or directory → reuse process_files/2 (report is generated).
       - If the input is a single file     → return a detailed inspection map (NO report).
   """
+
   def procesar_con_manejo_errores(path_or_list, opts \\ %{}) do
     cond do
+      # CASE 1: explicit list → validate like process_files/2, generate report, return {:ok, map}
       is_list(path_or_list) ->
-        # Validate list entries like process_files/2
         {valid_files, missing, invalid} = validate_files_list(path_or_list)
 
         if invalid != [] do
@@ -306,16 +307,18 @@ defmodule ProcesadorArchivos do
           """
         end
 
-        # Reuse process_files/2 to generate report and return {:ok, map}
+        # Reutilizamos process_files/2 para generar el reporte y retornar {:ok, map}
         process_files(valid_files, opts)
 
+      # CASE 2: directory → delega (ya valida ensure_directory!/1 adentro)
       File.dir?(path_or_list) ->
         process_directory(path_or_list, opts)
 
+      # CASE 3: single file (exists & is regular file) → correr pipeline con 1 archivo, generar reporte, retornar {:ok, map}
       File.regular?(path_or_list) ->
-        # Single-file inspection (NO report)
-        inspect_single_file(path_or_list)
+        run_and_report_single(path_or_list, opts)
 
+      # CASE 4: string pero no existe
       is_binary(path_or_list) and not File.exists?(path_or_list) ->
         raise ArgumentError, """
         Ruta no encontrada: #{path_or_list}
@@ -323,6 +326,7 @@ defmodule ProcesadorArchivos do
         #{usage_procesar_con_manejo_errores()}
         """
 
+      # CASE 5: cualquier otro tipo de argumento
       true ->
         raise ArgumentError, """
         Argumentos inválidos para procesar_con_manejo_errores/1.
@@ -335,127 +339,43 @@ defmodule ProcesadorArchivos do
     end
   end
 
+  # --------------------------------------------------------------------
+  # Helper: run pipeline for a single file, build and write the report,
+  #          and return {:ok, %{results, errors, duration_ms, out}}
+  # --------------------------------------------------------------------
+  defp run_and_report_single(path, opts) do
+    opts      = merge_defaults(opts)
+    start_ts  = System.monotonic_time()
 
-  # ----------------------------
-  # Single–file inspection (NO reporter)
-  # ----------------------------
-  defp inspect_single_file(path) do
-    type = Classifier.classify(path)
+    # Ejecutamos el pipeline con 1 archivo (respeta :mode, :progress, etc.)
+    {:ok, results, errors, runtime_info} = Pipeline.run([path], opts)
 
-    case type do
-      :csv  -> inspect_csv(path)
-      :json -> inspect_json(path)
-      :log  -> inspect_log(path)
-      _     -> %{estado: :error, errores: ["Tipo de archivo no soportado: #{path}"]}
-    end
-  end
+    duration_ms =
+      System.convert_time_unit(System.monotonic_time() - start_ts, :native, :millisecond)
 
-  # =============================
-  # CSV inspection (single file)
-  # =============================
-  defp inspect_csv(path) do
-    case ProcesadorArchivos.CSVReader.read(path) do
-      {:ok, rows, row_errors} ->
-        processed_lines = length(rows)
-        error_lines     = length(row_errors)
+    # Construimos el reporte estándar (igual que process_files/2)
+    text_report =
+      Reporter.build_report(%{
+        timestamp: DateTime.utc_now(),
+        input_root: path,             # para dejar claro que fue un file puntual
+        mode: opts.mode,
+        results: results,
+        errors: errors,
+        duration_ms: duration_ms,
+        runtime: runtime_info,
+        options: opts
+      })
 
-        status = if error_lines == 0, do: :ok, else: :parcial
+    out_path = Map.get(opts, :out, "output/reporte_final.txt")
+    :ok = Reporter.write(text_report, out_path)
 
-        parsed_errors =
-          Enum.map(row_errors, fn msg ->
-            case Regex.run(~r/^Línea\s+(\d+):\s+(.*)$/, msg) do
-              [_, line, message] -> {String.to_integer(line), message}
-              _ -> {:unknown, msg}
-            end
-          end)
-
-        %{
-          estado: status,
-          lineas_procesadas: processed_lines,
-          lineas_con_error: error_lines,
-          errores: parsed_errors
-        }
-
-      _ ->
-        %{estado: :error, errores: ["No se pudo leer #{path}"]}
-    end
-  end
-
-  # =============================
-  # JSON inspection (single file)
-  # =============================
-  defp inspect_json(path) do
-    case ProcesadorArchivos.JSONReader.read(path) do
-      # Structurally valid JSON (may have element-level errors)
-      {:ok, _data, element_errors} ->
-        parsed =
-          Enum.map(element_errors, fn err ->
-            {extract_json_index(err), err}
-          end)
-
-        status = if element_errors == [], do: :ok, else: :parcial
-
-        %{
-          estado: status,
-          lineas_con_error: length(element_errors),
-          errores: parsed
-        }
-
-      # Completely malformed JSON (DecodeError normalized to categories or messages)
-
-      {:error, cats} ->
-            human =
-              Enum.map(cats, fn cat ->
-                {:unknown, ProcesadorArchivos.JSONReader.humanize_category(cat)}
-              end)
-
-            %{estado: :parcial, lineas_con_error: length(human), errores: human}
-        end
-      end
-
-
-  @doc false
-  defp extract_json_index(err) do
-    cond do
-      Regex.match?(~r/\busuarios\[(\d+)\]/, err) ->
-        [_, idx] = Regex.run(~r/\busuarios\[(\d+)\]/, err)
-        {:usuarios, String.to_integer(idx)}
-
-      Regex.match?(~r/\bsesiones\[(\d+)\]/, err) ->
-        [_, idx] = Regex.run(~r/\bsesiones\[(\d+)\]/, err)
-        {:sesiones, String.to_integer(idx)}
-
-      true ->
-        :unknown
-    end
-  end
-
-  # =============================
-  # LOG inspection (single file)
-  # =============================
-  defp inspect_log(path) do
-    case ProcesadorArchivos.LogReader.read(path) do
-      {:ok, entries, line_errors} ->
-        status = if line_errors == [], do: :ok, else: :parcial
-
-        parsed =
-          Enum.map(line_errors, fn msg ->
-            case Regex.run(~r/^Línea\s+(\d+):\s+(.*)$/, msg) do
-              [_, line, message] -> {String.to_integer(line), message}
-              _ -> {:unknown, msg}
-            end
-          end)
-
-        %{
-          estado: status,
-          lineas_procesadas: length(entries),
-          lineas_con_error: length(line_errors),
-          errores: parsed
-        }
-
-      _ ->
-        %{estado: :error, errores: ["No se pudo leer #{path}"]}
-    end
+    {:ok,
+     %{
+       results: results,
+       errors: errors,
+       duration_ms: duration_ms,
+       out: out_path
+     }}
   end
 
   # ------------------------------------------------------------

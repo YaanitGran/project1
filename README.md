@@ -1,179 +1,366 @@
+# File Processor (CSV/JSON/LOG) — README
+
+> **Language note**: public API, comments, and this README are in **English**.  
+> Console output and report text are in **Spanish**, as required by the project brief.
+
 ***
 
-# File Processor (CSV, JSON, LOG) — Elixir
+## Table of Contents
 
-## 1. Overview
+*   \#overview
+*   \#key-features
+*   \#architecture
+    *   \#public-api
+    *   \#internal-modules
+*   \#installation--requirements
+*   \#data-contracts
+    *   \#csv
+    *   \#json
+    *   \#log
+*   \#how-to-use
+    *   \#process-a-directory
+    *   \#process-a-file-list
+    *   \#process-with-options-spanish-wrapper
+    *   \#errorhandlinginspection-that-always-writes-a-report
+    *   \#benchmark
+    *   \#where-is-the-report-written
+*   \#return-shapes
+*   \#execution-examples
+*   \#design-decisions
+    *   \#concurrency-model
+    *   \#timeout-semantics
+    *   \#argument-validation--ux
+    *   \#reporter-design
+    *   \#csv-policy
+    *   \#json-error-normalization
+    *   \#log-metrics
+*   \#performance-notes
+*   \#testing
+*   \#troubleshooting
 
-This project processes **CSV**, **JSON**, and **LOG** files provided either as a directory or as a list of paths. It computes **per‑file metrics**, builds **CSV consolidated totals**, and generates a final **text report** strictly aligned to the internal “section 5.1” format. It supports:
+***
 
-*   **Sequential** mode
-*   **Parallel** mode using `spawn` workers (timeouts per process + automatic retries)
-*   **Compare** mode (runs sequential and parallel on the same input and includes a performance analysis block)
+## Overview
 
-The report is saved to `reporte_final.txt` under an **output directory** which can be:
+This project processes **CSV**, **JSON**, and **LOG** files, computes per‑file metrics, and generates a human‑readable **Spanish** report. It supports **sequential** and **parallel** execution. The parallel mode is built on `Task.async_stream/3` with **robust timeout handling** that never aborts the whole run just because one file is slow or broken.
 
-*   The sibling `output/` next to the input directory (default behavior), or
-*   A custom directory supplied via CLI flag `--outdir`.
+***
 
-## 2. Requirements
+## Key Features
 
-*   Elixir `~> 1.19`
-*   Mix (bundled with Elixir)
+*   📁 Process a directory or an explicit **list of files** (mixed types).
+*   ⚡ Parallel mode with `Task.async_stream/3`, `ordered: true`, and **per‑file isolation**.
+*   ⏱️ **Timeouts** do not kill the whole run (errors are recorded and processing continues).
+*   🧾 A single **Spanish report** with:
+    *   Conditional “MÉTRICAS” sections (CSV/JSON/LOG printed **only if present**).
+    *   **Grouped** error blocks per file (CSV line errors, JSON categories, timeouts).
+    *   Summary with **unique error files** and **success rate**.
+    *   “Tiempo total de procesamiento” printed in **seconds with 3 decimals**.
+*   🧪 A comprehensive test suite covering public API, readers, metrics, reporter, and pipeline behavior.
 
-Dependencies (declared in `mix.exs`):
+***
 
-*   `nimble_csv` for RFC4180 CSV parsing
-*   `jason` for JSON decoding
+## Architecture
 
-Install dependencies:
+### Public API
+
+All public functions live in `ProcesadorArchivos`:
+
+*   `process_directory/2`
+*   `process_files/2`
+*   `procesar_con_opciones/2`  *(Spanish wrapper; maps `timeout` → `timeout_ms`)*
+*   `procesar_con_manejo_errores/1`  *(now **always** generates a report)*
+*   `benchmark/2`  *(returns timings & stats)*
+*   `benchmark_paralelo_vs_secuencial/1`  *(prints short timing summary)*
+
+> **Only these six functions are meant to be used directly.**
+
+### Internal modules
+
+Internal implementation details are namespaced under something like `PAInternal.*` (readers, metrics, classifier, pipeline). The **reporter** module is public (`ProcesadorArchivos.Reporter`) because it’s a reusable renderer, although you generally consume it via the API.
+
+*   Readers: `CSVReader`, `JSONReader`, `LogReader`
+*   Metrics: `CSVMetrics`, `JSONMetrics`, `LOGMetrics`
+*   Orchestration: `Classifier` (type detection), `Pipeline` (sequential/parallel run)
+*   Rendering: `ProcesadorArchivos.Reporter`
+
+***
+
+## Installation & Requirements
+
+*   **Elixir**: developed and tested with **Elixir 1.19.x** and recent OTP.
+*   **Dependencies** (declared in `mix.exs`):
+    *   `:jason` (JSON parsing)
+    *   `:nimble_csv` (CSV parsing)
+
+Install deps and run:
 
 ```bash
 mix deps.get
+mix compile
 ```
 
-## 3. Project Structure
+***
 
-    lib/
-      procesador_archivos.ex    # Orchestrator: sequential, parallel (spawn + timeouts + retries), compare
-      reader.ex                 # Readers for CSV/JSON/LOG
-      metrics.ex                # Per-file metrics + CSV consolidated totals
-      reporter.ex               # Report generator (section 5.1 formatting)
-    ejecutable.ex               # CLI entry point (escript)
-    output/                     # Generated reports (runtime)
-    data/                       # Sample input files (optional, for local runs)
-    test/
-      procesador_archivos_test.exs
-    mix.exs
-    README.md
+## Data Contracts
 
-## 4. Building the Executable (escript)
+### CSV
 
-From the project root:
+**Expected header** (exact match, in Spanish):
 
-```bash
-mix deps.get
-mix escript.build
+    fecha,producto,categoria,precio_unitario,cantidad,descuento
+
+Per‑row validations include (non‑exhaustive):
+
+*   `producto` and `categoria` must be **non‑empty**.
+*   `precio_unitario` must be a valid positive float.
+*   `cantidad` must be a valid positive integer.
+*   `descuento` must be a valid float in **\[0, 100]**.
+*   **Exactly 6 columns** per row.
+
+> **CSV policy:** if a CSV has **any** invalid row(s), the **whole file** is treated as **error** (no metrics returned for that file). The final report **groups** the per‑line messages under a single block for that file.
+
+### JSON
+
+Expected shape:
+
+```json
+{
+  "usuarios": [ ... ],
+  "sesiones": [ ... ]
+}
 ```
 
-This produces the `./procesador_archivos` executable in the project root.
+*   If the JSON is **malformed** (decoder error), the reader returns **syntax categories** (e.g. “Comillas faltantes”, “Comas faltantes”, “Llaves sin comillas”, “Comentarios no válidos en JSON”, “Corchetes/llaves sin cerrar”).
+*   If the JSON is structurally valid, the reader validates **element‑level** fields (types and domain constraints) and collects element errors. The pipeline still computes **metrics** for valid data (unless you choose otherwise).
+*   The reporter **groups** categories per file.
 
-> **Windows (PowerShell) example:**
->
-> ```powershell
-> escript .\procesador_archivos --mode sequential .\data
-> ```
+### LOG
 
-## 5. CLI Usage
+Expected format (one entry per line):
 
-    procesador_archivos [options] <directory | list_of_paths>
+    YYYY-MM-DD HH:MM:SS [LEVEL] [COMPONENT] Message
 
-    Options:
-      --mode sequential | parallel | compare
-      --max <int>            (optional; parallel/compare) max concurrency
-      --timeout <ms>         (optional; parallel/compare) coordinator receive timeout
-      --per-timeout <ms>     (optional; parallel/compare) per-process timeout
-      --retries <int>        (optional; parallel/compare) automatic retries per file
-      --outdir <path>        (optional) output directory override
-      --help
+*   Recognized levels include: `DEBUG, INFO, WARN, ERROR, FATAL`.
+*   The metrics include distributions, **top error component**, **hourly distribution**, **top messages**, and **average seconds between ERROR/FATAL events**.
 
-### 5.1 Examples
+***
 
-**Sequential (directory):**
+## How to Use
 
-```bash
-./procesador_archivos --mode sequential ./data
+> All examples below assume you run `iex -S mix` at the repo root.
+
+### Process a directory
+
+```elixir
+{:ok, out} =
+  ProcesadorArchivos.process_directory("./data", %{
+    mode: :parallel,          # or :sequential
+    max_workers: 8,           # default: System.schedulers_online()
+    timeout_ms: 10_000,       # per-file timeout
+    progress: true,           # print "Procesados X/Y"
+    out: "output/reporte_final.txt"
+  })
 ```
 
-**Parallel (list of files):**
+### Process a file list
 
-```bash
-./procesador_archivos --mode parallel ./data/ventas_enero.csv ./data/usuarios.json ./data/sistema.log
+```elixir
+files = [
+  "data/ventas_enero.csv",
+  "data/usuarios.json",
+  "data/sistema.log"
+]
+
+{:ok, out} = ProcesadorArchivos.process_files(files, %{mode: :parallel})
 ```
 
-**Parallel (with timeouts, retries, and custom output dir):**
+> If some files don’t exist, they are added to the error list as  
+> `"<path>: No se encontró el archivo"`, and the rest are processed normally.
 
-```bash
-./procesador_archivos --mode parallel --per-timeout 3000 --retries 2 --outdir ./reportes ./data
+### Process with options (Spanish wrapper)
+
+```elixir
+# 'timeout' is mapped to 'timeout_ms' internally.
+ProcesadorArchivos.procesar_con_opciones("./data", %{mode: :parallel, timeout: 10_000})
+# => :ok
 ```
 
-**Compare (sequential + parallel with performance analysis):**
+### Error‑handling/inspection that **always** writes a report
 
-```bash
-./procesador_archivos --mode compare --max 8 --timeout 20000 --per-timeout 12000 --retries 2 --outdir ./reportes ./data
+```elixir
+# Accepts a single file, a directory, or a list of files.
+# ALWAYS writes a report and returns the same shape as process_files/2.
+{:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores("data/usuarios_malformado.json")
+
+{:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores(["a.csv","b.json"], %{mode: :parallel})
+
+{:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores("./data")
 ```
 
-On success, the CLI prints the path to the generated report, e.g.:
+### Benchmark
 
-    Report generated: ./output/reporte_final.txt
+```elixir
+# Structured result (timings in ms, speedup, processes used, etc.)
+{:ok, b} = ProcesadorArchivos.benchmark("./data", %{progress: false})
+IO.inspect(b)
+```
 
-(or to your custom directory if `--outdir` is provided).
+```elixir
+# Spanish wrapper that prints in seconds (3 decimals)
+ProcesadorArchivos.benchmark_paralelo_vs_secuencial("./data")
+# Secuencial: 0.123 s
+# Paralelo:   0.045 s
+# Mejora:     2.73x
+```
 
-## 6. Report Format (Section 5.1)
+### Where is the report written?
 
-The final `reporte_final.txt` contains these blocks:
+By default to `output/reporte_final.txt`. You can override it via `out: "path/to/report.txt"` in the options.
 
-1.  **Header**: generation date/time, processed directory, processing mode
-2.  **Executive Summary**: total files, per-type counts, total processing time, errors count, success rate
-3.  **CSV Metrics (per file)** + **CSV Consolidated totals** (exact union of products across files)
-4.  **JSON Metrics (per file)**
-5.  **LOG Metrics (per file)**
-6.  **Performance Analysis** (only in compare mode): sequential time, parallel time, speedup factor, processes used, max memory (placeholder)
-7.  **Errors and Warnings**: list of files that failed or timed out (`%{file, detail}`)
+***
 
-## 7. Design Decisions
+## Return Shapes
 
-### 7.1 Parallelization with `spawn`
+All processing functions (`process_directory/2`, `process_files/2`, `procesar_con_manejo_errores/1`) return:
 
-*   A **worker process** is created for each file via `spawn`. Results return to the **coordinator** through `send/receive`.
-*   The coordinator maintains a **bounded pool** (size = `--max` or schedulers online) and keeps it **filled** while there are pending jobs.
+```elixir
+{:ok,
+  %{
+    results: [{path, type, metrics_map, payload_map}, ...],
+    errors:  [string(), ...],
+    duration_ms: integer(),
+    out: "path/to/report.txt"
+  }
+}
+```
 
-### 7.2 Timeouts and Retries
+*   `type` is one of `:csv | :json | :log`.
+*   `metrics_map` varies per type (see Metrics modules).
+*   `payload_map` contains raw error collections (e.g., `row_errors`, `element_errors`, `line_errors`) if applicable.
+*   `errors` are human‑readable strings for file‑level problems, **grouped** by the reporter.
 
-*   **Per‑process timeout** (`--per-timeout`) schedules a message `{:worker_timeout, ref}`; if the worker still runs, it is **killed** and the job is **re‑enqueued** with decremented retries (until `--retries` reaches zero).
-*   **Global receive timeout** (`--timeout`) protects the coordinator; if no messages arrive in the given period, the loop logs a warning and marks **all active jobs** as failed.
-*   Errors are **normalized** into `%{file, detail}` and appended to `metrics.errors` for the report.
+***
 
-### 7.3 CSV Consolidation (Exact Uniques)
+## Execution Examples
 
-*   Each `csv_metrics/2` exposes per‑file metrics and the product set; consolidation performs a **set union** to compute exact cross‑file unique products.
+**Directory (parallel)**
 
-### 7.4 Output Directory Resolution
+```elixir
+{:ok, out} = ProcesadorArchivos.process_directory("./data", %{mode: :parallel})
+IO.puts(out.out)
+# => output/reporte_final.txt
+```
 
-*   By default, reports are written to an `output/` **sibling of the input base** (next to `data/`).
-*   If `--outdir` is provided, the report is written **exactly** there.
-*   A helper `resolve_out_dir/2` makes this behavior **consistent** for sequential, parallel, and compare flows.
+**File list (sequential)**
 
-### 7.5 JSON Reader Tolerance
+```elixir
+{:ok, out} =
+  ProcesadorArchivos.process_files(
+    ["./data/ventas_ok.csv", "./data/usuarios.json"],
+    %{mode: :sequential, out: "output/reporte_ejec1.txt"}
+  )
+```
 
-*   The tests accept **atom** or **string** keys for `usuarios` and `sesiones`, to accommodate different decoder strategies.
-*   Invalid JSON triggers a normalized error (e.g., `JSON read error: <message>`) and participates in the error list and counters.
+**Error‑handling/inspection (single file)**
 
-## 8. Testing
+```elixir
+{:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores("./data/usuarios_malformado.json")
+```
 
-Run all tests:
+**Benchmark**
+
+```elixir
+ProcesadorArchivos.benchmark_paralelo_vs_secuencial("./data")
+```
+
+***
+
+## Design Decisions
+
+### Concurrency model
+
+*   **Why `Task.async_stream/3`?**  
+    It offers **bounded concurrency** with minimal boilerplate and good fault‑isolation for per‑item work.
+*   **`ordered: true` + `Enum.zip/2`:**  
+    We pair each finished task with its original path to identify which file timed out or crashed without extra mutable state.
+*   **Retries & timeouts:**  
+    `Task.async_stream/3` is used with `on_timeout: :kill_task`. The stream keeps going and yields `{:exit, :timeout}` for that item.
+
+### Timeout semantics
+
+*   **Do not abort** the whole run on a per‑file timeout.
+*   Record a friendly error:  
+    `"<path>: Tiempo de espera excedido (timeout)"`.
+*   Continue processing the rest of the files.
+
+### Argument validation & UX
+
+*   **Helpful `ArgumentError` messages** with usage examples:
+    *   Directory must exist for `process_directory/2` and wrappers.
+    *   File lists must be lists of **string paths** to **regular files**.
+    *   Missing files are converted to errors and reported in the output.
+
+### Reporter design
+
+*   **Conditional metric sections**: only print CSV/JSON/LOG sections if there are results of those types.
+*   **Grouped errors per file**:
+    *   CSV: parse a single aggregated message (`csv_has_corrupt_lines -> ...`) into one block with **one bullet per line error**.
+    *   JSON: group **syntax/validation categories** under one block.
+    *   Timeouts: group all timeout messages by file.
+*   **Success rate** uses the **count of unique error files** (not the count of messages).
+*   **Duration formatting**: seconds with **3 decimals** everywhere for consistency.
+
+### CSV policy
+
+*   If **any** row is invalid, the **entire file** is treated as error (no metrics).
+*   The report still shows all row‑level diagnostics under the file block.
+
+> Implementation detail: the CSV reader enforces header and per‑row validations and returns `rows` + `row_errors`. The pipeline escalates to a **file‑level error** when `row_errors != []`.
+
+### JSON error normalization
+
+*   Malformed JSON (decoder errors) is mapped to **categories** by inspecting the decoder message and the raw content (e.g., **missing quotes/commas**, **unquoted keys**, **comments**, **unclosed braces/brackets**).
+*   Element‑level (semantic) errors are categorized (e.g., **invalid types**, **negative durations**) and kept in the payload; the reporter can show them grouped.
+
+### LOG metrics
+
+*   `LOGMetrics` computes totals, distributions, **top error component**, hourly histogram, frequent messages, and **average seconds between ERROR/FATAL**.
+*   We switched the “critical” window to **ERROR/FATAL** (instead of FATAL‑only) as requested, making the metric applicable to more files.
+
+***
+
+## Performance Notes
+
+*   For **very small datasets**, parallel overhead may dominate.
+*   The benchmark runner disables progress printing (`progress: false`) for fair measurements.
+*   Good starting point for parallelism: `max_workers = min(file_count, 2 * System.schedulers_online())`.
+*   **I/O bound** datasets (lots of files on the same drive) may prefer fewer workers.
+
+***
+
+## Testing
+
+Run the whole suite:
 
 ```bash
 mix test
 ```
 
-The suite creates **temporary fixtures** under a unique folder in your OS temp directory and asserts:
+Notes:
 
-*   Reader correctness (CSV header columns; JSON keys; LOG entry fields)
-*   Metrics presence and CSV consolidated totals
-*   Reporter block presence (5.1)
-*   Orchestrator behavior in sequential/parallel and compare, including:
-    *   **Custom outdir**
-    *   **Per‑process timeouts and retries**
-    *   **Normalized errors** included in the final report
+*   Tests normalize CRLF→LF to avoid surprises on Windows.
+*   Example fixtures intentionally include corrupt data to verify error paths, grouping, and metrics.
+*   If you customize data formats (e.g., LOG line regex), update the **samples in tests** accordingly.
 
-## 9. Troubleshooting
+***
 
-*   If you run on **Windows**, normalize paths when comparing strings in tests to avoid `\` vs `/` mismatches. In the suite, we use a helper: `path |> Path.expand() |> Path.split() |> Path.join()`.
-*   For CLI flags, prefer dashed options (`--per-timeout`) which map to underscored keys (`:per_timeout`) in `OptionParser`.
-*   Ensure the orchestrator merges module defaults with runtime options (`Map.merge(@default_opts, rt_opts)`) so all flows behave consistently with or without CLI flags.
+## Troubleshooting
 
-## 10. License
-
-MIT (or update to your organization’s preferred license).
+*   **“KeyError :out”** → The public API merges defaults; ensure you pass a map for options or rely on the default `out: "output/reporte_final.txt"`.
+*   **“cannot pipe ... into ... <> ...”** → In tests, don’t pipe into `<>`. Use a helper that trims and concatenates in two steps.
+*   **“FunctionClauseError in Kernel.=\~” (in tests)** → Remember `assert_raise/2` returns the **exception struct**; use `Exception.message(exc)` (tests already do).
+*   **No metrics for a CSV with any row error** → This is by design (file‑level error if \`row\_errors != #csv-policy.
+*   **JSON malformed produces multiple lines** → It’s expected; the reporter **groups** them under one block per file.
 
 ***

@@ -136,16 +136,32 @@ defmodule ProcesadorArchivos.Pipeline do
             end
         end
 
+
       :json ->
-        # JSON: malformed file -> error. Element-level errors do not invalidate the whole file.
         case JSONReader.read(path) do
           {:ok, %{usuarios: users, sesiones: sess}, element_errors} ->
-            metrics = JSONMetrics.per_file(path, users, sess)
-            {:ok, {path, :json, metrics, %{metrics: metrics, element_errors: element_errors}}}
+            # Structurally valid JSON → compute categories from element-level errors (if any)
+            categories = JSONReader.categorize_errors(element_errors)
+            metrics    = JSONMetrics.per_file(path, users, sess)
 
-          {:error, errs} ->
-            {:error, ["Archivo #{path} (json): json_parse -> " <> Enum.join(errs, " | ")]}
+            {:ok, {path, :json, metrics,
+              %{
+                metrics: metrics,
+                element_errors: element_errors,
+                json_categories: categories  # keep categories in payload (useful for inspection/report)
+              }
+            }}
+
+          {:error, categories} ->
+            # Malformed JSON → convert categories to friendly messages
+            msgs =
+              Enum.map(categories, fn cat ->
+                "Archivo #{path} (json): JSON mal formateado con: #{JSONReader.humanize_category(cat)}"
+              end)
+
+            {:error, msgs}
         end
+
 
       :log ->
         case LogReader.read(path) do

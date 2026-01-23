@@ -11,6 +11,7 @@ defmodule ProcesadorArchivos.Reporter do
   @doc """
   Builds the full report string in Spanish.
   """
+
   def build_report(%{
         timestamp: ts,
         input_root: input_root,
@@ -32,18 +33,23 @@ defmodule ProcesadorArchivos.Reporter do
       log: length(log_ms)
     }
 
+    # --- NEW: group errors by file/type and compute unique error file count ---
+    errors_group = group_errors_by_file(errors)
+    error_files_count = map_size(errors_group)
+
+    # Use unique error files count (NOT number of error messages)
     success_rate =
-      if total_files + length(errors) > 0 do
-        100.0 * total_files / (total_files + length(errors))
+      if total_files + error_files_count > 0 do
+        Float.round(100.0 * total_files / (total_files + error_files_count), 1)
       else
         0.0
       end
-      |> Float.round(1)
 
-    mode_str = case mode do
-      :parallel -> "Paralelo"
-      :sequential -> "Secuencial"
-    end
+    mode_str =
+      case mode do
+        :parallel -> "Paralelo"
+        :sequential -> "Secuencial"
+      end
 
     ts_str = ts |> DateTime.shift_zone!("Etc/UTC") |> to_string()
 
@@ -67,7 +73,7 @@ defmodule ProcesadorArchivos.Reporter do
       - Archivos LOG: #{counts.log}
 
     Tiempo total de procesamiento: #{Float.round(dur_ms / 1000.0, 2)} segundos
-    Archivos con errores: #{length(errors)}
+    Archivos con errores: #{error_files_count}
     Tasa de éxito: #{success_rate}%
 
     --------------------------------------------------------------------------------
@@ -95,13 +101,14 @@ defmodule ProcesadorArchivos.Reporter do
     --------------------------------------------------------------------------------
     ERRORES Y ADVERTENCIAS
     --------------------------------------------------------------------------------
-    #{render_errors(errors)}
+    #{render_grouped_errors(errors_group)}
 
     ================================================================================
                                FIN DEL REPORTE
     ================================================================================
     """
   end
+
 
   @doc """
   Writes the report either to file (out path) or stdout if nil.
@@ -196,7 +203,7 @@ defmodule ProcesadorArchivos.Reporter do
         * Duración promedio de sesión: #{Float.round(m.avg_session_minutes, 2)} minutos
         * Páginas visitadas totales: #{m.total_pages}
         * Top acciones:
-      #{tops}
+        #{tops}
         * Hora pico de actividad: #{peak}
       """
     end)
@@ -253,22 +260,121 @@ defmodule ProcesadorArchivos.Reporter do
     |> Enum.join("\n")
   end
 
-
-  defp render_errors([]), do: "(Sin errores)\n"
-
-  defp render_errors(errs) do
-    errs
-    |> Enum.map(fn err ->
+  # ------------------------------------------------------------
+  # Groups raw error strings by (path, type) to render one block per file
+  # ------------------------------------------------------------
+  defp group_errors_by_file(errs) do
+    Enum.reduce(errs, %{}, fn err, acc ->
       cond do
-        String.contains?(err, "timeout") or
-        String.contains?(err, "Tiempo de espera excedido") ->
-          "⚠ " <> err
+        # CSV aggregated message the pipeline emits:
+        # "Archivo <path> (csv): csv_has_corrupt_lines -> Línea 2: ... | Línea 3: ..."
+        Regex.match?(~r/^Archivo\s+(.+?)\s+\(csv\):\s+csv_has_corrupt_lines\s+->\s+(.+)$/u, err) ->
+          [_, path, joined] =
+            Regex.run(~r/^Archivo\s+(.+?)\s+\(csv\):\s+csv_has_corrupt_lines\s+->\s+(.+)$/u, err)
 
+          items = String.split(joined, " | ")
+          Map.update(acc, {path, :csv}, items, &(&1 ++ items))
+
+        # JSON category line from pipeline:
+        # "Archivo <path> (json): JSON mal (formateado|malformateado) con: <category>"
+        Regex.match?(~r/^Archivo\s+(.+?)\s+\(json\):\s+JSON mal(?: |)formateado con:\s+(.+)$/u, err) ->
+          [_, path, cat] =
+            Regex.run(~r/^Archivo\s+(.+?)\s+\(json\):\s+JSON mal(?: |)formateado con:\s+(.+)$/u, err)
+
+          Map.update(acc, {path, :json}, [cat], &[cat | &1])
+
+        # Timeout lines like "<path>: Tiempo de espera excedido (timeout)"
+        Regex.match?(~r/^(.+?):\s+Tiempo de espera excedido.*$/u, err) ->
+          [_, path] = Regex.run(~r/^(.+?):\s+Tiempo de espera excedido.*$/u, err)
+          Map.update(acc, {path, :timeout}, [err], &[err | &1])
+
+        # Generic "<path>: <message>" fallback
+        Regex.match?(~r/^(.+?):\s+(.+)$/u, err) ->
+          [_, path, msg] = Regex.run(~r/^(.+?):\s+(.+)$/u, err)
+          Map.update(acc, {path, :unknown}, [msg], &[msg | &1])
+
+        # Fallback (no path detected)
         true ->
-          "✗ " <> err
+          Map.update(acc, {"(desconocido)", :unknown}, [err], &[err | &1])
       end
     end)
+    # Ensure stable order and uniqueness inside each group
+    |> Enum.into(%{}, fn {k, v} -> {k, Enum.reverse(Enum.uniq(v))} end)
+  end
+
+  # ------------------------------------------------------------
+  # Renders grouped errors: one block per file with nested bullets
+  # ------------------------------------------------------------
+  defp render_grouped_errors(group) when map_size(group) == 0 do
+    "(Sin errores)\n"
+  end
+
+  defp render_grouped_errors(group) do
+    group
+    |> Enum.map(fn
+      {{path, :csv}, items} ->
+        bullets =
+          items
+          |> order_csv_line_errors()
+          |> Enum.map(&("    * " <> &1))
+          |> Enum.join("\n")
+
+        """
+          ✗ **#{path}** (csv)
+          - Líneas con error:
+          #{bullets}
+        """
+
+      {{path, :json}, cats} ->
+        bullets =
+          cats
+          |> Enum.map(&("    * " <> &1))
+          |> Enum.join("\n")
+
+        """
+          ✗ **#{path}** (json)
+          - JSON mal formateado con:
+          #{bullets}
+        """
+
+      {{path, :timeout}, msgs} ->
+        bullets =
+          msgs
+          |> Enum.map(&("    * " <> &1))
+          |> Enum.join("\n")
+
+        """
+          ✗ **#{path}**
+          - Tiempo de espera:
+          #{bullets}
+        """
+
+      {{path, _other}, msgs} ->
+        bullets =
+          msgs
+          |> Enum.map(&("    * " <> &1))
+          |> Enum.join("\n")
+
+        """
+          ✗ **#{path}**
+          - Errores:
+          #{bullets}
+        """
+    end)
     |> Enum.join("\n")
+  end
+
+  # Orders CSV line errors by line number if they match "Línea <n>: ..."
+  defp order_csv_line_errors(items) do
+    items
+    |> Enum.map(fn s ->
+      case Regex.run(~r/^Línea\s+(\d+):\s+(.+)$/u, s) do
+        [_, n, _msg] -> {String.to_integer(n), s}
+        _ -> {1_000_000_000, s} # fallback at the end
+      end
+    end)
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.map(&elem(&1, 1))
   end
 
 

@@ -12,34 +12,150 @@ defmodule ProcesadorArchivos.JSONReader do
   * On JSON parse failure, returns {:error, ["<message>"]}.
   * Validates required fields and types per spec.
   """
+
+
+
   def read(path) do
     case File.read(path) do
       {:ok, bin} ->
-        with {:ok, data} <- decode_json(bin, path) do
-          {users, user_errs} = validate_users(Map.get(data, "usuarios", []))
-          {sessions, sess_errs} = validate_sessions(Map.get(data, "sesiones", []))
-          {:ok, %{usuarios: users, sesiones: sessions}, user_errs ++ sess_errs}
-        else
-          {:error, msg} -> {:error, [msg]}
+        case decode_json(bin, path) do
+          {:ok, data} when is_map(data) ->
+            {users, user_errs}   = validate_users(Map.get(data, "usuarios", []))
+            {sessions, sess_errs}= validate_sessions(Map.get(data, "sesiones", []))
+            {:ok, %{usuarios: users, sesiones: sessions}, user_errs ++ sess_errs}
+
+          {:ok, _other} ->
+            {:error, [:estructura_raiz_invalida]}
+
+          {:error, categories} ->
+            # malformed JSON → categories already normalized
+            {:error, categories}
         end
 
       {:error, reason} ->
-        {:error, ["No se pudo leer #{path}: #{inspect(reason)}"]}
+        {:error, [{:lectura_fallida, inspect(reason)}]}
     end
   end
 
-  defp decode_json(bin, path) do
-    case Jason.decode(bin) do
-      {:ok, data} when is_map(data) ->
-        {:ok, data}
 
-      {:ok, _other} ->
-        {:error, "JSON raíz inválida en #{path}: se esperaba objeto"}
 
-      {:error, %Jason.DecodeError{} = e} ->
-        {:error, "JSON malformado en #{path}: #{Exception.message(e)}"}
+    def categorize_errors(element_errors) when is_list(element_errors) do
+       element_errors
+       |> Enum.flat_map(&categorize_element_error/1)
+       |> Enum.uniq()
+       |> default_other()
     end
-  end
+
+    # Infer categories for malformed JSON (DecodeError), inspecting both the error message and the raw content.
+
+    defp decode_categories(bin, msg) do
+      []
+      |> maybe(:comillas_faltantes,     String.contains?(msg, "unexpected byte") or String.contains?(msg, "invalid string"))
+      |> maybe(:comas_faltantes,        String.contains?(msg, "expected comma"))
+      |> maybe(:llaves_sin_comillas,    String.contains?(msg, "expected string for key") or String.contains?(msg, "object keys must be strings"))
+      |> maybe(:corchetes_sin_cerrar,   String.contains?(msg, "unexpected end"))
+      |> maybe(:comentarios_no_validos, String.contains?(bin, "//") or String.contains?(bin, "/*"))
+      |> default_other()
+    end
+
+
+
+
+    defp default_other([]), do: [:otro]
+    defp default_other(list), do: Enum.reverse(list)
+
+    # -------------------------
+    # Private: categorize element-level messages
+    # -------------------------
+
+    # Map validation error strings to categories (duración negativa, tipos, etc.)
+    defp categorize_element_error(err) when is_binary(err) do
+      cond do
+        # Typical negative duration hint
+        String.contains?(err, "duracion_segundos") and String.contains?(err, "no negativo") ->
+          [{:valor_invalido, "duracion_segundos negativa"}]
+
+        # Type mismatches: boolean/integer/etc.
+        String.contains?(err, "booleano") or String.contains?(err, "entero") ->
+          [:tipos_incorrectos]
+
+        true ->
+          [:otro]
+      end
+    end
+
+
+
+    # Parses JSON and returns either {:ok, map} or {:error, categories}
+
+    # Parses JSON and returns either {:ok, data} or {:error, categories}
+    defp decode_json(bin, _path) do
+      case Jason.decode(bin) do
+        {:ok, data} ->
+          {:ok, data}
+
+        {:error, %Jason.DecodeError{} = e} ->
+          {:error, detect_syntax_categories(bin, Exception.message(e))}
+      end
+    end
+
+    # ---- Heuristic syntax categorizer (inspects the whole binary) ----
+    defp detect_syntax_categories(bin, msg) do
+      cats =
+        []
+        |> maybe(:comillas_faltantes,
+             unclosed_quotes?(bin)
+             or String.contains?(msg, "unexpected byte")
+             or String.contains?(msg, "invalid string"))
+        |> maybe(:comas_faltantes,
+             missing_commas_between_pairs?(bin)
+             or String.contains?(msg, "expected comma"))
+        |> maybe(:llaves_sin_comillas,
+             keys_without_quotes?(bin)
+             or String.contains?(msg, "expected string for key")
+             or String.contains?(msg, "object keys must be strings"))
+        |> maybe(:comentarios_no_validos,
+             String.contains?(bin, "//") or String.contains?(bin, "/*"))
+        |> maybe(:corchetes_sin_cerrar, count?("[", bin) > count?("]", bin))
+        |> maybe(:llaves_sin_cerrar,   count?("{", bin) > count?("}", bin))
+
+      if cats == [], do: [:otro], else: Enum.uniq(cats)
+    end
+
+    # Count unescaped quotes (odd count → likely unclosed)
+    defp unclosed_quotes?(bin) do
+      Regex.scan(~r/(?<!\\)"/, bin) |> length() |> rem(2) == 1
+    end
+
+    # Key-value followed by a new key in next line without a comma (coarse heuristic)
+    defp missing_commas_between_pairs?(bin) do
+      Regex.match?(~r/"[^"]+"\s*:\s*[^,\}\]\n]+?\n\s*"[^"]+"\s*:/, bin)
+    end
+
+    # Unquoted JSON object keys like: usuario_id: 3002
+    defp keys_without_quotes?(bin) do
+      Regex.match?(~r/(?m)^\s*[A-Za-z_][A-Za-z0-9_]*\s*:/, bin)
+    end
+
+    defp count?(needle, bin), do: :binary.matches(bin, needle) |> length()
+
+    defp maybe(list, tag, true),  do: [tag | list]
+    defp maybe(list, _tag, false), do: list
+
+
+    def humanize_category({:valor_invalido, msg}), do: "Valores inválidos (#{msg})"
+    def humanize_category({:lectura_fallida, r}),  do: "No se pudo leer el archivo (#{r})"
+    def humanize_category(:estructura_raiz_invalida), do: "Estructura raíz inválida (se esperaba objeto JSON)"
+    def humanize_category(:comillas_faltantes),       do: "Comillas faltantes"
+    def humanize_category(:comas_faltantes),          do: "Comas faltantes"
+    def humanize_category(:llaves_sin_comillas),      do: "Llaves sin comillas"
+    def humanize_category(:corchetes_sin_cerrar),     do: "Corchetes sin cerrar"
+    def humanize_category(:llaves_sin_cerrar),        do: "Llaves sin cerrar"
+    def humanize_category(:comentarios_no_validos),   do: "Comentarios no válidos en JSON"
+    def humanize_category(:tipos_incorrectos),        do: "Tipos de datos incorrectos"
+    def humanize_category(:otro),                     do: "Error de JSON no clasificado"
+
+
 
   defp validate_users(list) when is_list(list) do
     Enum.with_index(list, 0)

@@ -167,9 +167,9 @@ Expected format (one entry per line):
 
 ```elixir
 files = [
-  "data/ventas_enero.csv",
-  "data/usuarios.json",
-  "data/sistema.log"
+  "data/valid/ventas_enero.csv",
+  "data/valid/usuarios.json",
+  "data/valid/sistema.log"
 ]
 
 {:ok, out} = ProcesadorArchivos.process_files(files, %{mode: :parallel})
@@ -191,7 +191,7 @@ ProcesadorArchivos.procesar_con_opciones("./data", %{mode: :parallel, timeout: 1
 ```elixir
 # Accepts a single file, a directory, or a list of files.
 # ALWAYS writes a report and returns the same shape as process_files/2.
-{:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores("data/usuarios_malformado.json")
+{:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores("data/error/usuarios_malformado.json")
 
 {:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores(["a.csv","b.json"], %{mode: :parallel})
 
@@ -257,7 +257,7 @@ IO.puts(out.out)
 ```elixir
 {:ok, out} =
   ProcesadorArchivos.process_files(
-    ["./data/ventas_ok.csv", "./data/usuarios.json"],
+    ["./data/valid/ventas_ok.csv", "./data/valid/usuarios.json"],
     %{mode: :sequential, out: "output/reporte_ejec1.txt"}
   )
 ```
@@ -265,7 +265,7 @@ IO.puts(out.out)
 **Error‑handling/inspection (single file)**
 
 ```elixir
-{:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores("./data/usuarios_malformado.json")
+{:ok, out} = ProcesadorArchivos.procesar_con_manejo_errores("./data/error/usuarios_malformado.json")
 ```
 
 **Benchmark**

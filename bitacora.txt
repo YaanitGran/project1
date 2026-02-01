@@ -1,0 +1,1 @@
+Realicé push, después eliminé un commit y luego ejecuté git pull

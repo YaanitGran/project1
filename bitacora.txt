@@ -1,3 +1,5 @@
 No se puede hacer un push y borrar commit sin tener problemas después
 test.md
 Utilicé reset --soft para eliminar el archivo de test.md, y utilice merge
+Utilicé un stash para guardar archivo.ex, hice pop 3 commits después
+El stash previo que teniamos de la practica ya no puede hacer pop

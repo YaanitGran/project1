@@ -1,1 +1,2 @@
+No se puede hacer un push y borrar commit sin tener problemas después
 

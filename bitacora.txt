@@ -10,3 +10,5 @@ Se realizó un cambio que fue borrado con reset --hard y posteriormente recupera
 Cometi un error al modificar el archivo resetcommands.md que detecté a tiempo, y corregí con restore <file>
 
 cuando intentas monitorear un archivo con alguna extension que esté en el .gitignore, en seguida te avisa que no es posible
+
+Eliminé index.html y lo recuperere con reset --mixed y después usé restore <file>

@@ -1,4 +1,4 @@
 *.class
 *.zip
 _output/
-*.exs
+*.txt
